@@ -11,26 +11,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     
     try {
         if ($department_id) {
-            $query = "SELECT division_id, division_name FROM divisions WHERE department_id = :department_id AND status = 'active' ORDER BY division_name";
+            $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
+                     FROM divisions d 
+                     JOIN departments dept ON d.department_id = dept.department_id 
+                     WHERE d.department_id = ? AND d.status = 'active' AND dept.status = 'active'
+                     ORDER BY d.division_name";
             $stmt = $db->prepare($query);
-            $stmt->bindParam(':department_id', $department_id);
+            $stmt->execute([$department_id]);
         } else {
-            $query = "SELECT division_id, division_name, department_id FROM divisions WHERE status = 'active' ORDER BY division_name";
+            $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
+                     FROM divisions d 
+                     JOIN departments dept ON d.department_id = dept.department_id 
+                     WHERE d.status = 'active' AND dept.status = 'active'
+                     ORDER BY d.division_name";
             $stmt = $db->prepare($query);
+            $stmt->execute();
         }
-        
-        $stmt->execute();
         
         $divisions = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $division = [
+            $divisions[] = [
                 'id' => $row['division_id'],
-                'name' => $row['division_name']
+                'name' => $row['division_name'],
+                'department_id' => $row['department_id'],
+                'department_name' => $row['department_name'],
+                'status' => 'active'
             ];
-            if (!$department_id) {
-                $division['dep_id'] = $row['department_id'];
-            }
-            $divisions[] = $division;
         }
         
         http_response_code(200);

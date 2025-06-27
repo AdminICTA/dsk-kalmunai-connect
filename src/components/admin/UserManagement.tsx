@@ -1,114 +1,101 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Eye, Edit, Trash2, X } from "lucide-react";
-
-interface User {
-  user_id: string;
-  name: string;
-  post: string;
-  dep_id: string;
-  department: string;
-  div_id: string;
-  division: string;
-  role: "Admin" | "Reception_Staff";
-  username: string;
-  password: string;
-}
+import { useToast } from "@/hooks/use-toast";
+import { departmentService, Department } from "@/services/departmentService";
+import { divisionService, Division } from "@/services/divisionService";
+import { userService, User } from "@/services/userService";
 
 const UserManagement = () => {
-  const [users, setUsers] = useState<User[]>([
-    { 
-      user_id: "USR001", 
-      name: "Admin User", 
-      post: "System Administrator", 
-      dep_id: "DEP003",
-      department: "IT Services",
-      div_id: "DIV003",
-      division: "System Management",
-      role: "Admin", 
-      username: "admin",
-      password: "admin123"
-    },
-    { 
-      user_id: "USR002", 
-      name: "Reception Staff", 
-      post: "Front Desk Officer", 
-      dep_id: "DEP001",
-      department: "Administration",
-      div_id: "DIV001", 
-      division: "General Administration",
-      role: "Reception_Staff", 
-      username: "reception",
-      password: "reception123"
-    },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     name: "", post: "", dep_id: "", div_id: "", role: "Admin" as "Admin" | "Reception_Staff",
     username: "", password: ""
   });
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
 
-  const departments = [
-    { id: "DEP001", name: "Administration" },
-    { id: "DEP002", name: "Finance" },
-    { id: "DEP003", name: "IT Services" },
-    { id: "DEP004", name: "Human Resources" },
-  ];
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const divisions = [
-    { id: "DIV001", name: "General Administration", dep_id: "DEP001" },
-    { id: "DIV002", name: "Accounting", dep_id: "DEP002" },
-    { id: "DIV003", name: "System Management", dep_id: "DEP003" },
-    { id: "DIV004", name: "Staff Management", dep_id: "DEP004" },
-  ];
-
-  const filteredDivisions = divisions.filter(div => div.dep_id === formData.dep_id);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const selectedDept = departments.find(d => d.id === formData.dep_id);
-    const selectedDiv = divisions.find(d => d.id === formData.div_id);
-    
-    if (editingUser) {
-      setUsers(users.map(user => 
-        user.user_id === editingUser.user_id 
-          ? { 
-              ...user, 
-              name: formData.name,
-              post: formData.post,
-              dep_id: formData.dep_id,
-              department: selectedDept?.name || "",
-              div_id: formData.div_id,
-              division: selectedDiv?.name || "",
-              role: formData.role,
-              username: formData.username,
-              password: formData.password
-            }
-          : user
-      ));
-    } else {
-      const newUser = {
-        user_id: `USR${String(users.length + 1).padStart(3, '0')}`,
-        name: formData.name,
-        post: formData.post,
-        dep_id: formData.dep_id,
-        department: selectedDept?.name || "",
-        div_id: formData.div_id,
-        division: selectedDiv?.name || "",
-        role: formData.role,
-        username: formData.username,
-        password: formData.password
-      };
-      setUsers([...users, newUser]);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [userData, departmentData, divisionData] = await Promise.all([
+        userService.getAll(),
+        departmentService.getAll(),
+        divisionService.getAll()
+      ]);
+      setUsers(userData);
+      setDepartments(departmentData);
+      setDivisions(divisionData);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    setShowForm(false);
-    setEditingUser(null);
-    setFormData({ name: "", post: "", dep_id: "", div_id: "", role: "Admin", username: "", password: "" });
+  };
+
+  const filteredDivisions = divisions.filter(div => div.department_id.toString() === formData.dep_id);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    
+    try {
+      if (editingUser) {
+        const userData = {
+          user_id: editingUser.user_id,
+          name: formData.name,
+          post: formData.post,
+          dep_id: formData.dep_id,
+          div_id: formData.div_id,
+          role: formData.role,
+          username: formData.username,
+          ...(formData.password && { password: formData.password })
+        };
+        const updatedUser = await userService.update(userData);
+        setUsers(users.map(user => 
+          user.user_id === editingUser.user_id ? updatedUser : user
+        ));
+        toast({
+          title: "Success",
+          description: "User updated successfully",
+        });
+      } else {
+        const newUser = await userService.create(formData);
+        setUsers([...users, newUser]);
+        toast({
+          title: "Success",
+          description: "User created successfully",
+        });
+      }
+      setShowForm(false);
+      setEditingUser(null);
+      setFormData({ name: "", post: "", dep_id: "", div_id: "", role: "Admin", username: "", password: "" });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Operation failed",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleEdit = (user: User) => {
@@ -120,14 +107,41 @@ const UserManagement = () => {
       div_id: user.div_id,
       role: user.role,
       username: user.username,
-      password: user.password
+      password: ""
     });
     setShowForm(true);
   };
 
-  const handleDelete = (userId: string) => {
-    setUsers(users.filter(user => user.user_id !== userId));
+  const handleDelete = async (user_id: string) => {
+    if (!confirm("Are you sure you want to delete this user?")) {
+      return;
+    }
+    
+    try {
+      await userService.delete(user_id);
+      setUsers(users.filter(user => user.user_id !== user_id));
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete user",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <Card className="bg-white shadow-lg">
+        <CardContent className="p-6">
+          <div className="text-center">Loading users...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -144,28 +158,34 @@ const UserManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {users.map((user) => (
-              <div key={user.user_id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-                <div>
-                  <p className="font-semibold text-blue-800">{user.name}</p>
-                  <p className="text-sm text-gray-600">
-                    {user.post} | {user.role} | {user.department}
-                  </p>
-                  <p className="text-xs text-gray-500">ID: {user.user_id} | Username: {user.username}</p>
-                </div>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline">
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleEdit(user)}>
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDelete(user.user_id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+            {users.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No users found. Create your first user!
               </div>
-            ))}
+            ) : (
+              users.map((user) => (
+                <div key={user.user_id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+                  <div>
+                    <p className="font-semibold text-blue-800">{user.name}</p>
+                    <p className="text-sm text-gray-600">
+                      {user.post} | {user.role} | {user.department}
+                    </p>
+                    <p className="text-xs text-gray-500">ID: {user.user_id} | Username: {user.username}</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline">
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleEdit(user)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleDelete(user.user_id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
@@ -191,6 +211,7 @@ const UserManagement = () => {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter full name"
                     required
+                    disabled={submitting}
                   />
                 </div>
                 <div>
@@ -201,6 +222,7 @@ const UserManagement = () => {
                     onChange={(e) => setFormData({ ...formData, post: e.target.value })}
                     placeholder="Enter post"
                     required
+                    disabled={submitting}
                   />
                 </div>
                 <div>
@@ -211,6 +233,7 @@ const UserManagement = () => {
                     onChange={(e) => setFormData({ ...formData, dep_id: e.target.value, div_id: "" })}
                     className="w-full p-2 border rounded-md"
                     required
+                    disabled={submitting}
                   >
                     <option value="">Select Department</option>
                     {departments.map(dept => (
@@ -226,7 +249,7 @@ const UserManagement = () => {
                     onChange={(e) => setFormData({ ...formData, div_id: e.target.value })}
                     className="w-full p-2 border rounded-md"
                     required
-                    disabled={!formData.dep_id}
+                    disabled={!formData.dep_id || submitting}
                   >
                     <option value="">Select Division</option>
                     {filteredDivisions.map(div => (
@@ -242,6 +265,7 @@ const UserManagement = () => {
                     onChange={(e) => setFormData({ ...formData, role: e.target.value as "Admin" | "Reception_Staff" })}
                     className="w-full p-2 border rounded-md"
                     required
+                    disabled={submitting}
                   >
                     <option value="Admin">Admin</option>
                     <option value="Reception_Staff">Reception Staff</option>
@@ -255,23 +279,29 @@ const UserManagement = () => {
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     placeholder="Enter username"
                     required
+                    disabled={submitting}
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password {editingUser && "(Leave blank to keep current)"}</Label>
                   <Input
                     id="password"
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="Enter password"
-                    required
+                    required={!editingUser}
+                    disabled={submitting}
                   />
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button type="submit" className="bg-gradient-to-r from-purple-600 to-purple-700">
-                  {editingUser ? "Update" : "Create"} User
+                <Button 
+                  type="submit" 
+                  className="bg-gradient-to-r from-purple-600 to-purple-700"
+                  disabled={submitting}
+                >
+                  {submitting ? "Processing..." : (editingUser ? "Update" : "Create")} User
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                   Cancel

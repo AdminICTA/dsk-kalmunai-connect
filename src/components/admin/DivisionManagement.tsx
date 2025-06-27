@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Eye, Edit, Trash2, X } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { departmentService, Department } from "@/services/departmentService";
 import { divisionService, Division } from "@/services/divisionService";
 
@@ -48,17 +48,12 @@ const DivisionManagement = () => {
     setSubmitting(true);
     
     try {
-      // For now, we'll simulate the API call since divisions endpoints aren't implemented yet
-      const selectedDept = departments.find(d => d.id.toString() === formData.department_id);
-      
       if (editingDiv) {
-        // Simulate update
-        const updatedDiv = {
-          ...editingDiv,
-          name: formData.name,
-          department_id: parseInt(formData.department_id),
-          department_name: selectedDept?.name || ""
-        };
+        const updatedDiv = await divisionService.update(
+          editingDiv.id, 
+          formData.name, 
+          parseInt(formData.department_id)
+        );
         setDivisions(divisions.map(div => 
           div.id === editingDiv.id ? updatedDiv : div
         ));
@@ -67,14 +62,7 @@ const DivisionManagement = () => {
           description: "Division updated successfully",
         });
       } else {
-        // Simulate create
-        const newDiv = {
-          id: Date.now(), // Temporary ID
-          name: formData.name,
-          department_id: parseInt(formData.department_id),
-          department_name: selectedDept?.name || "",
-          status: "active"
-        };
+        const newDiv = await divisionService.create(formData.name, parseInt(formData.department_id));
         setDivisions([...divisions, newDiv]);
         toast({
           title: "Success",
@@ -87,7 +75,7 @@ const DivisionManagement = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Operation failed",
+        description: error instanceof Error ? error.message : "Operation failed",
         variant: "destructive",
       });
     } finally {
@@ -107,7 +95,7 @@ const DivisionManagement = () => {
     }
     
     try {
-      // Simulate delete
+      await divisionService.delete(id);
       setDivisions(divisions.filter(div => div.id !== id));
       toast({
         title: "Success",
@@ -116,7 +104,7 @@ const DivisionManagement = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete division",
+        description: error instanceof Error ? error.message : "Failed to delete division",
         variant: "destructive",
       });
     }
