@@ -1,69 +1,136 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Eye, Edit, Trash2, X } from "lucide-react";
-
-interface Division {
-  div_id: string;
-  name: string;
-  dep_id: string;
-  department: string;
-}
+import { useToast } from "@/components/ui/use-toast";
+import { departmentService, Department } from "@/services/departmentService";
+import { divisionService, Division } from "@/services/divisionService";
 
 const DivisionManagement = () => {
-  const [divisions, setDivisions] = useState<Division[]>([
-    { div_id: "DIV001", name: "General Administration", dep_id: "DEP001", department: "Administration" },
-    { div_id: "DIV002", name: "Accounting", dep_id: "DEP002", department: "Finance" },
-    { div_id: "DIV003", name: "System Management", dep_id: "DEP003", department: "IT Services" },
-    { div_id: "DIV004", name: "Staff Management", dep_id: "DEP004", department: "Human Resources" },
-  ]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingDiv, setEditingDiv] = useState<Division | null>(null);
-  const [formData, setFormData] = useState({ name: "", dep_id: "", department: "" });
+  const [formData, setFormData] = useState({ name: "", department_id: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
 
-  const departments = [
-    { id: "DEP001", name: "Administration" },
-    { id: "DEP002", name: "Finance" },
-    { id: "DEP003", name: "IT Services" },
-    { id: "DEP004", name: "Human Resources" },
-  ];
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const selectedDept = departments.find(d => d.id === formData.dep_id);
-    
-    if (editingDiv) {
-      setDivisions(divisions.map(div => 
-        div.div_id === editingDiv.div_id 
-          ? { ...div, name: formData.name, dep_id: formData.dep_id, department: selectedDept?.name || "" }
-          : div
-      ));
-    } else {
-      const newDiv = {
-        div_id: `DIV${String(divisions.length + 1).padStart(3, '0')}`,
-        name: formData.name,
-        dep_id: formData.dep_id,
-        department: selectedDept?.name || ""
-      };
-      setDivisions([...divisions, newDiv]);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [divisionData, departmentData] = await Promise.all([
+        divisionService.getAll(),
+        departmentService.getAll()
+      ]);
+      setDivisions(divisionData);
+      setDepartments(departmentData);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    setShowForm(false);
-    setEditingDiv(null);
-    setFormData({ name: "", dep_id: "", department: "" });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    
+    try {
+      // For now, we'll simulate the API call since divisions endpoints aren't implemented yet
+      const selectedDept = departments.find(d => d.id.toString() === formData.department_id);
+      
+      if (editingDiv) {
+        // Simulate update
+        const updatedDiv = {
+          ...editingDiv,
+          name: formData.name,
+          department_id: parseInt(formData.department_id),
+          department_name: selectedDept?.name || ""
+        };
+        setDivisions(divisions.map(div => 
+          div.id === editingDiv.id ? updatedDiv : div
+        ));
+        toast({
+          title: "Success",
+          description: "Division updated successfully",
+        });
+      } else {
+        // Simulate create
+        const newDiv = {
+          id: Date.now(), // Temporary ID
+          name: formData.name,
+          department_id: parseInt(formData.department_id),
+          department_name: selectedDept?.name || "",
+          status: "active"
+        };
+        setDivisions([...divisions, newDiv]);
+        toast({
+          title: "Success",
+          description: "Division created successfully",
+        });
+      }
+      setShowForm(false);
+      setEditingDiv(null);
+      setFormData({ name: "", department_id: "" });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Operation failed",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleEdit = (div: Division) => {
     setEditingDiv(div);
-    setFormData({ name: div.name, dep_id: div.dep_id, department: div.department });
+    setFormData({ name: div.name, department_id: div.department_id.toString() });
     setShowForm(true);
   };
 
-  const handleDelete = (divId: string) => {
-    setDivisions(divisions.filter(div => div.div_id !== divId));
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this division?")) {
+      return;
+    }
+    
+    try {
+      // Simulate delete
+      setDivisions(divisions.filter(div => div.id !== id));
+      toast({
+        title: "Success",
+        description: "Division deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete division",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <Card className="bg-white shadow-lg">
+        <CardContent className="p-6">
+          <div className="text-center">Loading divisions...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -80,25 +147,31 @@ const DivisionManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {divisions.map((div) => (
-              <div key={div.div_id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                <div>
-                  <p className="font-semibold text-blue-800">{div.name}</p>
-                  <p className="text-sm text-gray-600">ID: {div.div_id} | Department: {div.department}</p>
-                </div>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline">
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleEdit(div)}>
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDelete(div.div_id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+            {divisions.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No divisions found. Create your first division!
               </div>
-            ))}
+            ) : (
+              divisions.map((div) => (
+                <div key={div.id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                  <div>
+                    <p className="font-semibold text-blue-800">{div.name}</p>
+                    <p className="text-sm text-gray-600">ID: {div.id} | Department: {div.department_name}</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline">
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleEdit(div)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleDelete(div.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
@@ -123,16 +196,18 @@ const DivisionManagement = () => {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Enter division name"
                   required
+                  disabled={submitting}
                 />
               </div>
               <div>
                 <Label htmlFor="department">Department</Label>
                 <select
                   id="department"
-                  value={formData.dep_id}
-                  onChange={(e) => setFormData({ ...formData, dep_id: e.target.value })}
+                  value={formData.department_id}
+                  onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
                   className="w-full p-2 border rounded-md"
                   required
+                  disabled={submitting}
                 >
                   <option value="">Select Department</option>
                   {departments.map(dept => (
@@ -141,8 +216,12 @@ const DivisionManagement = () => {
                 </select>
               </div>
               <div className="flex space-x-2">
-                <Button type="submit" className="bg-gradient-to-r from-green-600 to-green-700">
-                  {editingDiv ? "Update" : "Create"} Division
+                <Button 
+                  type="submit" 
+                  className="bg-gradient-to-r from-green-600 to-green-700"
+                  disabled={submitting}
+                >
+                  {submitting ? "Processing..." : (editingDiv ? "Update" : "Create")} Division
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                   Cancel

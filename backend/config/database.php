@@ -1,10 +1,10 @@
 
 <?php
 class Database {
-    private $host = 'localhost';
-    private $db_name = 'dsk_kalmunai';
-    private $username = 'your_db_username';
-    private $password = 'your_db_password';
+    private $host = '162.214.204.205';
+    private $db_name = 'dskalmun_Rapp';
+    private $username = 'dskalmun_Admin';
+    private $password = 'Itadmin@1993';
     private $conn = null;
 
     public function getConnection() {
