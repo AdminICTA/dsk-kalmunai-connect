@@ -7,16 +7,47 @@ USE dskalmun_Rapp;
 -- First, let's check the current structure and update departments table
 -- The existing table has department_id as INT, but we need to ensure it has the right structure
 
--- Add missing columns to departments table if they don't exist
-ALTER TABLE departments 
-ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive') DEFAULT 'active' AFTER department_name;
+-- Add status column to departments table if it doesn't exist
+SET @dbname = DATABASE();
+SET @tablename = 'departments';
+SET @columnname = 'status';
+SET @preparedStatement = (SELECT IF(
+  (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE
+      (table_schema = @dbname)
+      AND (table_name = @tablename)
+      AND (column_name = @columnname)
+  ) > 0,
+  "SELECT 1",
+  CONCAT("ALTER TABLE ", @tablename, " ADD COLUMN ", @columnname, " ENUM('active', 'inactive') DEFAULT 'active' AFTER department_name;")
+));
+
+PREPARE alterIfNotExists FROM @preparedStatement;
+EXECUTE alterIfNotExists;
+DEALLOCATE PREPARE alterIfNotExists;
 
 -- Update existing departments to have active status
 UPDATE departments SET status = 'active' WHERE status IS NULL;
 
--- Add missing columns to divisions table if they don't exist
-ALTER TABLE divisions 
-ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive') DEFAULT 'active' AFTER department_id;
+-- Add status column to divisions table if it doesn't exist
+SET @tablename = 'divisions';
+SET @columnname = 'status';
+SET @preparedStatement = (SELECT IF(
+  (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE
+      (table_schema = @dbname)
+      AND (table_name = @tablename)
+      AND (column_name = @columnname)
+  ) > 0,
+  "SELECT 1",
+  CONCAT("ALTER TABLE ", @tablename, " ADD COLUMN ", @columnname, " ENUM('active', 'inactive') DEFAULT 'active' AFTER department_id;")
+));
+
+PREPARE alterIfNotExists FROM @preparedStatement;
+EXECUTE alterIfNotExists;
+DEALLOCATE PREPARE alterIfNotExists;
 
 -- Update existing divisions to have active status
 UPDATE divisions SET status = 'active' WHERE status IS NULL;
@@ -213,12 +244,101 @@ CALL UpdateSubjectStaffDivisionsColumns();
 DROP PROCEDURE UpdateSubjectStaffDivisionsColumns;
 
 -- Ensure proper indexing for performance
-CREATE INDEX IF NOT EXISTS idx_departments_status ON departments(status);
-CREATE INDEX IF NOT EXISTS idx_divisions_status ON divisions(status);
-CREATE INDEX IF NOT EXISTS idx_users_role_status ON users(role, is_active);
-CREATE INDEX IF NOT EXISTS idx_public_users_active ON public_users(is_active);
-CREATE INDEX IF NOT EXISTS idx_documents_division_active ON documents(division_id, is_active);
-CREATE INDEX IF NOT EXISTS idx_registry_status_date ON public_registry(status, visit_date);
+-- Create index on departments.status if it doesn't exist
+SET @dbname = DATABASE();
+SET @table = 'departments';
+SET @index_name = 'idx_departments_status';
+SET @column = 'status';
+SET @prepared_stmt = (SELECT IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+   WHERE table_schema = @dbname 
+   AND table_name = @table 
+   AND index_name = @index_name) = 0,
+  CONCAT('CREATE INDEX ', @index_name, ' ON ', @table, '(', @column, ')'),
+  'SELECT 1'
+));
+PREPARE stmt FROM @prepared_stmt;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Create index on divisions.status if it doesn't exist
+SET @table = 'divisions';
+SET @index_name = 'idx_divisions_status';
+SET @prepared_stmt = (SELECT IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+   WHERE table_schema = @dbname 
+   AND table_name = @table 
+   AND index_name = @index_name) = 0,
+  CONCAT('CREATE INDEX ', @index_name, ' ON ', @table, '(', @column, ')'),
+  'SELECT 1'
+));
+PREPARE stmt FROM @prepared_stmt;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Create index on users(role, is_active) if it doesn't exist
+SET @table = 'users';
+SET @index_name = 'idx_users_role_status';
+SET @columns = 'role, is_active';
+SET @prepared_stmt = (SELECT IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+   WHERE table_schema = @dbname 
+   AND table_name = @table 
+   AND index_name = @index_name) = 0,
+  CONCAT('CREATE INDEX ', @index_name, ' ON ', @table, '(', @columns, ')'),
+  'SELECT 1'
+));
+PREPARE stmt FROM @prepared_stmt;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Create index on public_users(is_active) if it doesn't exist
+SET @table = 'public_users';
+SET @index_name = 'idx_public_users_active';
+SET @column = 'is_active';
+SET @prepared_stmt = (SELECT IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+   WHERE table_schema = @dbname 
+   AND table_name = @table 
+   AND index_name = @index_name) = 0,
+  CONCAT('CREATE INDEX ', @index_name, ' ON ', @table, '(', @column, ')'),
+  'SELECT 1'
+));
+PREPARE stmt FROM @prepared_stmt;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Create index on documents(division_id, is_active) if it doesn't exist
+SET @table = 'documents';
+SET @index_name = 'idx_documents_division_active';
+SET @columns = 'division_id, is_active';
+SET @prepared_stmt = (SELECT IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+   WHERE table_schema = @dbname 
+   AND table_name = @table 
+   AND index_name = @index_name) = 0,
+  CONCAT('CREATE INDEX ', @index_name, ' ON ', @table, '(', @columns, ')'),
+  'SELECT 1'
+));
+PREPARE stmt FROM @prepared_stmt;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Create index on public_registry(status, visit_date) if it doesn't exist
+SET @table = 'public_registry';
+SET @index_name = 'idx_registry_status_date';
+SET @columns = 'status, visit_date';
+SET @prepared_stmt = (SELECT IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+   WHERE table_schema = @dbname 
+   AND table_name = @table 
+   AND index_name = @index_name) = 0,
+  CONCAT('CREATE INDEX ', @index_name, ' ON ', @table, '(', @columns, ')'),
+  'SELECT 1'
+));
+PREPARE stmt FROM @prepared_stmt;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Update existing user passwords to be properly hashed (if not already)
 UPDATE users 

@@ -1,5 +1,5 @@
 
-const API_BASE_URL = 'https://your-cpanel-domain.com/backend/api'; // Update this to your actual cPanel domain
+const API_BASE_URL = 'https://dskalmunai.lk/backend/api';
 
 export interface User {
   id: string;
