@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
     
     try {
         // Check if division exists
-        $check_query = "SELECT COUNT(*) FROM divisions WHERE div_id = ?";
+        $check_query = "SELECT COUNT(*) FROM divisions WHERE div_id = ? AND status = 'active'";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->execute([$id]);
         
@@ -31,8 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
             exit;
         }
         
-        // Delete division (hard delete since no status column in original schema)
-        $query = "DELETE FROM divisions WHERE div_id = ?";
+        // Soft delete - set status to inactive
+        $query = "UPDATE divisions SET status = 'inactive', updated_at = NOW() WHERE div_id = ?";
         $stmt = $db->prepare($query);
         $stmt->execute([$id]);
         

@@ -13,10 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     
     try {
         $query = "SELECT u.user_id, u.name, u.post, u.role, u.username, u.is_active, 
-                         d.name as department_name, div.name as division_name
+                         d.department_name, div.name as division_name
                   FROM users u
-                  JOIN departments d ON u.dep_id = d.dep_id
-                  JOIN divisions div ON u.div_id = div.div_id
+                  JOIN departments d ON u.department_id = d.department_id
+                  JOIN divisions div ON u.division_id = div.div_id
                   ORDER BY u.created_at DESC";
         $stmt = $db->prepare($query);
         $stmt->execute();

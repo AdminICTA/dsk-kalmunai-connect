@@ -10,27 +10,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $department_id = isset($_GET['department_id']) ? $_GET['department_id'] : '';
     
     try {
-        if ($department_id) {
-            $query = "SELECT division_id, division_name FROM divisions WHERE department_id = :department_id AND status = 'active' ORDER BY division_name";
+        if (!empty($department_id)) {
+            // Get divisions for specific department
+            $query = "SELECT d.div_id, d.name, d.dep_id, dept.department_name 
+                      FROM divisions d 
+                      JOIN departments dept ON d.dep_id = dept.department_id 
+                      WHERE d.dep_id = ? AND d.status = 'active' 
+                      ORDER BY d.name";
             $stmt = $db->prepare($query);
-            $stmt->bindParam(':department_id', $department_id);
+            $stmt->execute([$department_id]);
         } else {
-            $query = "SELECT division_id, division_name, department_id FROM divisions WHERE status = 'active' ORDER BY division_name";
+            // Get all divisions
+            $query = "SELECT d.div_id, d.name, d.dep_id, dept.department_name 
+                      FROM divisions d 
+                      JOIN departments dept ON d.dep_id = dept.department_id 
+                      WHERE d.status = 'active' 
+                      ORDER BY dept.department_name, d.name";
             $stmt = $db->prepare($query);
+            $stmt->execute();
         }
-        
-        $stmt->execute();
         
         $divisions = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $division = [
-                'id' => $row['division_id'],
-                'name' => $row['division_name']
+            $divisions[] = [
+                'id' => $row['div_id'],
+                'name' => $row['name'],
+                'department_id' => $row['dep_id'],
+                'department_name' => $row['department_name']
             ];
-            if (!$department_id) {
-                $division['dep_id'] = $row['department_id'];
-            }
-            $divisions[] = $division;
         }
         
         http_response_code(200);

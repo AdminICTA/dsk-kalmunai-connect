@@ -1,5 +1,5 @@
 
-const API_BASE_URL = 'http://localhost/backend/api'; // Update this to your actual backend URL
+const API_BASE_URL = 'https://your-cpanel-domain.com/backend/api'; // Update this to your actual cPanel domain
 
 export interface Department {
   id: number;

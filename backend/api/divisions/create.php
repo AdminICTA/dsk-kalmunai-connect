@@ -11,32 +11,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $database = new Database();
     $db = $database->getConnection();
     
+    // Get JSON input
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
     
-    if (!isset($data['name']) || !isset($data['dep_id']) || empty(trim($data['name'])) || empty(trim($data['dep_id']))) {
+    // Validate input
+    if (!isset($data['name']) || empty(trim($data['name'])) || !isset($data['dep_id']) || empty($data['dep_id'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Division name and department ID are required']);
         exit;
     }
     
     $name = trim($data['name']);
-    $dep_id = trim($data['dep_id']);
+    $dep_id = $data['dep_id'];
     
     try {
         // Check if department exists
-        $dept_check = "SELECT COUNT(*) FROM departments WHERE dep_id = ?";
-        $dept_stmt = $db->prepare($dept_check);
-        $dept_stmt->execute([$dep_id]);
+        $dept_check_query = "SELECT department_name FROM departments WHERE department_id = ? AND status = 'active'";
+        $dept_check_stmt = $db->prepare($dept_check_query);
+        $dept_check_stmt->execute([$dep_id]);
+        $department = $dept_check_stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($dept_stmt->fetchColumn() == 0) {
-            http_response_code(400);
+        if (!$department) {
+            http_response_code(404);
             echo json_encode(['success' => false, 'message' => 'Department not found']);
             exit;
         }
         
         // Check if division already exists in this department
-        $check_query = "SELECT COUNT(*) FROM divisions WHERE name = ? AND dep_id = ?";
+        $check_query = "SELECT COUNT(*) FROM divisions WHERE name = ? AND dep_id = ? AND status = 'active'";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->execute([$name, $dep_id]);
         
@@ -46,29 +49,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             exit;
         }
         
-        // Generate division ID
-        $div_id = 'DIV' . str_pad(mt_rand(1, 999), 3, '0', STR_PAD_LEFT);
-        
         // Insert new division
-        $query = "INSERT INTO divisions (div_id, name, dep_id, created_at) VALUES (?, ?, ?, NOW())";
+        $query = "INSERT INTO divisions (name, dep_id, status, created_at) VALUES (?, ?, 'active', NOW())";
         $stmt = $db->prepare($query);
-        $stmt->execute([$div_id, $name, $dep_id]);
+        $stmt->execute([$name, $dep_id]);
         
-        // Get department name for response
-        $dept_query = "SELECT name FROM departments WHERE dep_id = ?";
-        $dept_stmt = $db->prepare($dept_query);
-        $dept_stmt->execute([$dep_id]);
-        $dept_name = $dept_stmt->fetchColumn();
+        $division_id = $db->lastInsertId();
         
         http_response_code(201);
         echo json_encode([
             'success' => true,
             'message' => 'Division created successfully',
             'division' => [
-                'id' => $div_id,
+                'id' => $division_id,
                 'name' => $name,
                 'department_id' => $dep_id,
-                'department_name' => $dept_name
+                'department_name' => $department['department_name']
             ]
         ]);
     } catch (PDOException $exception) {

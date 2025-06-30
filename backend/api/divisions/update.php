@@ -11,9 +11,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
     $database = new Database();
     $db = $database->getConnection();
     
+    // Get JSON input
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
     
+    // Validate input
     if (!isset($data['id']) || !isset($data['name']) || empty(trim($data['name']))) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Division ID and name are required']);
@@ -25,22 +27,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
     
     try {
         // Check if division exists
-        $check_query = "SELECT dep_id FROM divisions WHERE div_id = ?";
+        $check_query = "SELECT d.div_id, d.dep_id, dept.department_name 
+                        FROM divisions d 
+                        JOIN departments dept ON d.dep_id = dept.department_id 
+                        WHERE d.div_id = ? AND d.status = 'active'";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->execute([$id]);
+        $division = $check_stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($check_stmt->rowCount() == 0) {
+        if (!$division) {
             http_response_code(404);
             echo json_encode(['success' => false, 'message' => 'Division not found']);
             exit;
         }
         
-        $dep_id = $check_stmt->fetchColumn();
-        
-        // Check if new name already exists in same department (excluding current division)
-        $name_check_query = "SELECT COUNT(*) FROM divisions WHERE name = ? AND dep_id = ? AND div_id != ?";
+        // Check if new name already exists in the same department (excluding current division)
+        $name_check_query = "SELECT COUNT(*) FROM divisions WHERE name = ? AND dep_id = ? AND div_id != ? AND status = 'active'";
         $name_check_stmt = $db->prepare($name_check_query);
-        $name_check_stmt->execute([$name, $dep_id, $id]);
+        $name_check_stmt->execute([$name, $division['dep_id'], $id]);
         
         if ($name_check_stmt->fetchColumn() > 0) {
             http_response_code(409);
@@ -53,12 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
         $stmt = $db->prepare($query);
         $stmt->execute([$name, $id]);
         
-        // Get department name for response
-        $dept_query = "SELECT name FROM departments WHERE dep_id = ?";
-        $dept_stmt = $db->prepare($dept_query);
-        $dept_stmt->execute([$dep_id]);
-        $dept_name = $dept_stmt->fetchColumn();
-        
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -66,8 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
             'division' => [
                 'id' => $id,
                 'name' => $name,
-                'department_id' => $dep_id,
-                'department_name' => $dept_name
+                'department_id' => $division['dep_id'],
+                'department_name' => $division['department_name']
             ]
         ]);
     } catch (PDOException $exception) {
