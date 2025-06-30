@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Eye, Edit, Trash2, X } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { departmentService, Department } from "@/services/departmentService";
 import { divisionService, Division } from "@/services/divisionService";
 
@@ -49,7 +49,15 @@ const DivisionManagement = () => {
     
     try {
       if (editingDiv) {
+<<<<<<< HEAD
         const updatedDiv = await divisionService.update(editingDiv.id, formData.name);
+=======
+        const updatedDiv = await divisionService.update(
+          editingDiv.id, 
+          formData.name, 
+          parseInt(formData.department_id)
+        );
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
         setDivisions(divisions.map(div => 
           div.id === editingDiv.id ? updatedDiv : div
         ));
@@ -58,7 +66,11 @@ const DivisionManagement = () => {
           description: "Division updated successfully",
         });
       } else {
+<<<<<<< HEAD
         const newDiv = await divisionService.create(formData.name, formData.department_id);
+=======
+        const newDiv = await divisionService.create(formData.name, parseInt(formData.department_id));
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
         setDivisions([...divisions, newDiv]);
         toast({
           title: "Success",

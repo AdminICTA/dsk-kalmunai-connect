@@ -16,7 +16,12 @@ export const divisionService = {
         ? `${API_BASE_URL}/divisions/list?department_id=${departmentId}`
         : `${API_BASE_URL}/divisions/list`;
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
       const data = await response.json();
       
       if (!data.success) {
@@ -30,7 +35,7 @@ export const divisionService = {
     }
   },
 
-  async create(name: string, departmentId: string): Promise<Division> {
+  async create(name: string, department_id: string): Promise<Division> {
     try {
       const response = await fetch(`${API_BASE_URL}/divisions/create`, {
         method: 'POST',
@@ -40,7 +45,7 @@ export const divisionService = {
         },
         body: JSON.stringify({
           name,
-          dep_id: departmentId
+          department_id
         })
       });
 
@@ -57,7 +62,7 @@ export const divisionService = {
     }
   },
 
-  async update(id: string, name: string): Promise<Division> {
+  async update(id: string, name: string, department_id: string): Promise<Division> {
     try {
       const response = await fetch(`${API_BASE_URL}/divisions/update`, {
         method: 'PUT',
@@ -67,7 +72,8 @@ export const divisionService = {
         },
         body: JSON.stringify({
           id,
-          name
+          name,
+          department_id
         })
       });
 
@@ -80,26 +86,6 @@ export const divisionService = {
       return data.division;
     } catch (error) {
       console.error('Error updating division:', error);
-      throw error;
-    }
-  },
-
-  async delete(id: string): Promise<void> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/divisions/delete?id=${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to delete division');
-      }
-    } catch (error) {
-      console.error('Error deleting division:', error);
       throw error;
     }
   }

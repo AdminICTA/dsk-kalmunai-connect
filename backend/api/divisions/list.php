@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $department_id = isset($_GET['department_id']) ? $_GET['department_id'] : '';
     
     try {
+<<<<<<< HEAD
         if (!empty($department_id)) {
             // Get divisions for specific department
             $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
@@ -26,6 +27,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
                       JOIN departments dept ON d.department_id = dept.department_id 
                       WHERE d.status = 'active' 
                       ORDER BY dept.department_name, d.division_name";
+=======
+        if ($department_id) {
+            $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
+                     FROM divisions d 
+                     JOIN departments dept ON d.department_id = dept.department_id 
+                     WHERE d.department_id = ? AND d.status = 'active' AND dept.status = 'active'
+                     ORDER BY d.division_name";
+            $stmt = $db->prepare($query);
+            $stmt->execute([$department_id]);
+        } else {
+            $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
+                     FROM divisions d 
+                     JOIN departments dept ON d.department_id = dept.department_id 
+                     WHERE d.status = 'active' AND dept.status = 'active'
+                     ORDER BY d.division_name";
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
             $stmt = $db->prepare($query);
             $stmt->execute();
         }
@@ -36,7 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
                 'id' => $row['division_id'],
                 'name' => $row['division_name'],
                 'department_id' => $row['department_id'],
+<<<<<<< HEAD
                 'department_name' => $row['department_name']
+=======
+                'department_name' => $row['department_name'],
+                'status' => 'active'
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
             ];
         }
         

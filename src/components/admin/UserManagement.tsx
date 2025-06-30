@@ -5,10 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Eye, Edit, Trash2, X } from "lucide-react";
+<<<<<<< HEAD
 import { useToast } from "@/components/ui/use-toast";
 import { userService, User } from "@/services/userService";
 import { departmentService, Department } from "@/services/departmentService";
 import { divisionService, Division } from "@/services/divisionService";
+=======
+import { useToast } from "@/hooks/use-toast";
+import { departmentService, Department } from "@/services/departmentService";
+import { divisionService, Division } from "@/services/divisionService";
+import { userService, User } from "@/services/userService";
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
 
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -27,12 +34,17 @@ const UserManagement = () => {
     username: "", 
     password: ""
   });
+<<<<<<< HEAD
+=======
+  const [submitting, setSubmitting] = useState(false);
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
   const { toast } = useToast();
 
   useEffect(() => {
     fetchData();
   }, []);
 
+<<<<<<< HEAD
   useEffect(() => {
     if (formData.department_id) {
       fetchDivisions(formData.department_id);
@@ -48,6 +60,19 @@ const UserManagement = () => {
       ]);
       setUsers(userData);
       setDepartments(departmentData);
+=======
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [userData, departmentData, divisionData] = await Promise.all([
+        userService.getAll(),
+        departmentService.getAll(),
+        divisionService.getAll()
+      ]);
+      setUsers(userData);
+      setDepartments(departmentData);
+      setDivisions(divisionData);
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
     } catch (error) {
       toast({
         title: "Error",
@@ -59,6 +84,7 @@ const UserManagement = () => {
     }
   };
 
+<<<<<<< HEAD
   const fetchDivisions = async (departmentId: string) => {
     try {
       const divisionData = await divisionService.getAll(departmentId);
@@ -67,6 +93,9 @@ const UserManagement = () => {
       console.error('Error fetching divisions:', error);
     }
   };
+=======
+  const filteredDivisions = divisions.filter(div => div.department_id.toString() === formData.dep_id);
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,10 +103,30 @@ const UserManagement = () => {
     
     try {
       if (editingUser) {
+<<<<<<< HEAD
         // Update functionality would go here
         toast({
           title: "Info",
           description: "Update functionality will be implemented soon",
+=======
+        const userData = {
+          user_id: editingUser.user_id,
+          name: formData.name,
+          post: formData.post,
+          dep_id: formData.dep_id,
+          div_id: formData.div_id,
+          role: formData.role,
+          username: formData.username,
+          ...(formData.password && { password: formData.password })
+        };
+        const updatedUser = await userService.update(userData);
+        setUsers(users.map(user => 
+          user.user_id === editingUser.user_id ? updatedUser : user
+        ));
+        toast({
+          title: "Success",
+          description: "User updated successfully",
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
         });
       } else {
         const newUser = await userService.create(formData);
@@ -89,7 +138,11 @@ const UserManagement = () => {
       }
       setShowForm(false);
       setEditingUser(null);
+<<<<<<< HEAD
       setFormData({ name: "", post: "", department_id: "", division_id: "", role: "Admin", username: "", password: "" });
+=======
+      setFormData({ name: "", post: "", dep_id: "", div_id: "", role: "Admin", username: "", password: "" });
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
     } catch (error) {
       toast({
         title: "Error",
@@ -102,19 +155,53 @@ const UserManagement = () => {
   };
 
   const handleEdit = (user: User) => {
+<<<<<<< HEAD
     // Edit functionality placeholder
     toast({
       title: "Info",
       description: "Edit functionality will be implemented soon",
+=======
+    setEditingUser(user);
+    setFormData({
+      name: user.name,
+      post: user.post,
+      dep_id: user.dep_id,
+      div_id: user.div_id,
+      role: user.role,
+      username: user.username,
+      password: ""
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
     });
   };
 
+<<<<<<< HEAD
   const handleDelete = (userId: string) => {
     // Delete functionality placeholder
     toast({
       title: "Info",
       description: "Delete functionality will be implemented soon",
     });
+=======
+  const handleDelete = async (user_id: string) => {
+    if (!confirm("Are you sure you want to delete this user?")) {
+      return;
+    }
+    
+    try {
+      await userService.delete(user_id);
+      setUsers(users.filter(user => user.user_id !== user_id));
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete user",
+        variant: "destructive",
+      });
+    }
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
   };
 
   if (loading) {
@@ -148,13 +235,21 @@ const UserManagement = () => {
               </div>
             ) : (
               users.map((user) => (
+<<<<<<< HEAD
                 <div key={user.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+=======
+                <div key={user.user_id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
                   <div>
                     <p className="font-semibold text-blue-800">{user.name}</p>
                     <p className="text-sm text-gray-600">
                       {user.post} | {user.role} | {user.department}
                     </p>
+<<<<<<< HEAD
                     <p className="text-xs text-gray-500">ID: {user.id} | Username: {user.username}</p>
+=======
+                    <p className="text-xs text-gray-500">ID: {user.user_id} | Username: {user.username}</p>
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
                   </div>
                   <div className="flex space-x-2">
                     <Button size="sm" variant="outline">
@@ -163,7 +258,11 @@ const UserManagement = () => {
                     <Button size="sm" variant="outline" onClick={() => handleEdit(user)}>
                       <Edit className="w-4 h-4" />
                     </Button>
+<<<<<<< HEAD
                     <Button size="sm" variant="outline" onClick={() => handleDelete(user.id)}>
+=======
+                    <Button size="sm" variant="outline" onClick={() => handleDelete(user.user_id)}>
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -233,7 +332,11 @@ const UserManagement = () => {
                     onChange={(e) => setFormData({ ...formData, division_id: e.target.value })}
                     className="w-full p-2 border rounded-md"
                     required
+<<<<<<< HEAD
                     disabled={!formData.department_id || submitting}
+=======
+                    disabled={!formData.dep_id || submitting}
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
                   >
                     <option value="">Select Division</option>
                     {divisions.map(div => (
@@ -267,14 +370,18 @@ const UserManagement = () => {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password {editingUser && "(Leave blank to keep current)"}</Label>
                   <Input
                     id="password"
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="Enter password"
+<<<<<<< HEAD
                     required
+=======
+                    required={!editingUser}
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
                     disabled={submitting}
                   />
                 </div>

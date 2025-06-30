@@ -1,6 +1,6 @@
 
 import { forwardRef } from "react";
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface PublicUser {
   public_id: string;
@@ -69,7 +69,7 @@ const PrintableIdCard = forwardRef<HTMLDivElement, PrintableIdCardProps>(
           
           {/* Right side - QR Code */}
           <div className="w-16 flex flex-col items-center">
-            <QRCode 
+            <QRCodeSVG 
               value={JSON.stringify({
                 id: user.public_id,
                 name: user.name,

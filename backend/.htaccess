@@ -19,6 +19,7 @@ RewriteRule ^api/divisions/list/?$ api/divisions/list.php [QSA,L]
 RewriteRule ^api/divisions/create/?$ api/divisions/create.php [QSA,L]
 RewriteRule ^api/divisions/update/?$ api/divisions/update.php [QSA,L]
 RewriteRule ^api/divisions/delete/?$ api/divisions/delete.php [QSA,L]
+<<<<<<< HEAD
 
 # User Management Routes
 RewriteRule ^api/users/list/?$ api/users/list.php [QSA,L]
@@ -34,6 +35,16 @@ RewriteRule ^api/public/scan/?$ api/public/scan.php [QSA,L]
 
 # Token Management Routes
 RewriteRule ^api/tokens/generate/?$ api/tokens/generate.php [QSA,L]
+=======
+RewriteRule ^api/users/list/?$ api/users/list.php [QSA,L]
+RewriteRule ^api/users/create/?$ api/users/create.php [QSA,L]
+RewriteRule ^api/users/update/?$ api/users/update.php [QSA,L]
+RewriteRule ^api/users/delete/?$ api/users/delete.php [QSA,L]
+RewriteRule ^api/subject-staff/list/?$ api/subject-staff/list.php [QSA,L]
+RewriteRule ^api/subject-staff/create/?$ api/subject-staff/create.php [QSA,L]
+RewriteRule ^api/subject-staff/update/?$ api/subject-staff/update.php [QSA,L]
+RewriteRule ^api/subject-staff/delete/?$ api/subject-staff/delete.php [QSA,L]
+>>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
 RewriteRule ^api/tokens/display/?$ api/tokens/display.php [QSA,L]
 
 # Registry Routes
