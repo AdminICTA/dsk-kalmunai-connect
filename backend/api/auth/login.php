@@ -2,10 +2,12 @@
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
+include_once '../../config/auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $database = new Database();
     $db = $database->getConnection();
+    $auth = new Auth();
     
     $data = json_decode(file_get_contents("php://input"));
     
@@ -15,23 +17,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $role = $data->role;
         
         try {
-            $query = "SELECT user_id, username, password_hash, role, status FROM users WHERE username = :username AND role = :role AND status = 'active'";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(':username', $username);
-            $stmt->bindParam(':role', $role);
-            $stmt->execute();
+            // Check different user tables based on role
+            if ($role === 'Admin' || $role === 'Reception_Staff') {
+                $query = "SELECT user_id, name, username, password, role, dep_id, div_id FROM users WHERE username = ? AND role = ? AND is_active = 1";
+                $stmt = $db->prepare($query);
+                $stmt->execute([$username, $role]);
+            } elseif ($role === 'Subject_Staff') {
+                $query = "SELECT sub_id as user_id, name, username, password, 'Subject_Staff' as role, dep_id FROM subject_staff WHERE username = ? AND is_active = 1";
+                $stmt = $db->prepare($query);
+                $stmt->execute([$username]);
+            } elseif ($role === 'Public') {
+                $query = "SELECT public_id as user_id, name, username, password, 'Public' as role FROM public_users WHERE username = ? AND is_active = 1";
+                $stmt = $db->prepare($query);
+                $stmt->execute([$username]);
+            } else {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid role']);
+                exit;
+            }
             
             if ($stmt->rowCount() == 1) {
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
                 
-                if (password_verify($password, $row['password_hash'])) {
-                    // Generate JWT token (simplified version)
-                    $token = base64_encode(json_encode([
+                if (password_verify($password, $row['password'])) {
+                    $token = $auth->generateToken([
                         'user_id' => $row['user_id'],
                         'username' => $row['username'],
+                        'name' => $row['name'],
                         'role' => $row['role'],
-                        'exp' => time() + (24 * 60 * 60) // 24 hours
-                    ]));
+                        'dep_id' => $row['dep_id'] ?? null,
+                        'div_id' => $row['div_id'] ?? null
+                    ]);
                     
                     http_response_code(200);
                     echo json_encode([
@@ -41,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         'user' => [
                             'user_id' => $row['user_id'],
                             'username' => $row['username'],
+                            'name' => $row['name'],
                             'role' => $row['role']
                         ]
                     ]);

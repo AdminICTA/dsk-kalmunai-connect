@@ -5,19 +5,51 @@ RewriteEngine On
 RewriteCond %{REQUEST_METHOD} OPTIONS
 RewriteRule ^(.*)$ $1 [R=200,L]
 
-# API Routes
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+# Authentication Routes
 RewriteRule ^api/auth/login/?$ api/auth/login.php [QSA,L]
-RewriteRule ^api/public/create/?$ api/public/create.php [QSA,L]
-RewriteRule ^api/public/scan/?$ api/public/scan.php [QSA,L]
-RewriteRule ^api/registry/create/?$ api/registry/create.php [QSA,L]
+
+# Department Routes
 RewriteRule ^api/departments/list/?$ api/departments/list.php [QSA,L]
 RewriteRule ^api/departments/create/?$ api/departments/create.php [QSA,L]
 RewriteRule ^api/departments/update/?$ api/departments/update.php [QSA,L]
 RewriteRule ^api/departments/delete/?$ api/departments/delete.php [QSA,L]
+
+# Division Routes
 RewriteRule ^api/divisions/list/?$ api/divisions/list.php [QSA,L]
+RewriteRule ^api/divisions/create/?$ api/divisions/create.php [QSA,L]
+RewriteRule ^api/divisions/update/?$ api/divisions/update.php [QSA,L]
+RewriteRule ^api/divisions/delete/?$ api/divisions/delete.php [QSA,L]
+
+# User Management Routes
+RewriteRule ^api/users/list/?$ api/users/list.php [QSA,L]
+RewriteRule ^api/users/create/?$ api/users/create.php [QSA,L]
+
+# Subject Staff Routes
+RewriteRule ^api/subject-staff/create/?$ api/subject-staff/create.php [QSA,L]
+
+# Public User Routes
+RewriteRule ^api/public/create/?$ api/public/create.php [QSA,L]
+RewriteRule ^api/public/register/?$ api/public/register.php [QSA,L]
+RewriteRule ^api/public/scan/?$ api/public/scan.php [QSA,L]
+
+# Token Management Routes
+RewriteRule ^api/tokens/generate/?$ api/tokens/generate.php [QSA,L]
 RewriteRule ^api/tokens/display/?$ api/tokens/display.php [QSA,L]
+
+# Registry Routes
+RewriteRule ^api/registry/create/?$ api/registry/create.php [QSA,L]
+
+# Document Management Routes
+RewriteRule ^api/documents/upload/?$ api/documents/upload.php [QSA,L]
+RewriteRule ^api/documents/list/?$ api/documents/list.php [QSA,L]
+
+# Statistics Routes
+RewriteRule ^api/stats/dashboard/?$ api/stats/dashboard.php [QSA,L]
+
+# Catch-all for other API requests
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/(.*)$ api/index.php [QSA,L]
 
 # Security headers
 Header always set X-Content-Type-Options nosniff

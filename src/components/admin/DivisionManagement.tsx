@@ -48,17 +48,8 @@ const DivisionManagement = () => {
     setSubmitting(true);
     
     try {
-      // For now, we'll simulate the API call since divisions endpoints aren't implemented yet
-      const selectedDept = departments.find(d => d.id.toString() === formData.department_id);
-      
       if (editingDiv) {
-        // Simulate update
-        const updatedDiv = {
-          ...editingDiv,
-          name: formData.name,
-          department_id: parseInt(formData.department_id),
-          department_name: selectedDept?.name || ""
-        };
+        const updatedDiv = await divisionService.update(editingDiv.id, formData.name);
         setDivisions(divisions.map(div => 
           div.id === editingDiv.id ? updatedDiv : div
         ));
@@ -67,14 +58,7 @@ const DivisionManagement = () => {
           description: "Division updated successfully",
         });
       } else {
-        // Simulate create
-        const newDiv = {
-          id: Date.now(), // Temporary ID
-          name: formData.name,
-          department_id: parseInt(formData.department_id),
-          department_name: selectedDept?.name || "",
-          status: "active"
-        };
+        const newDiv = await divisionService.create(formData.name, formData.department_id);
         setDivisions([...divisions, newDiv]);
         toast({
           title: "Success",
@@ -87,7 +71,7 @@ const DivisionManagement = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Operation failed",
+        description: error instanceof Error ? error.message : "Operation failed",
         variant: "destructive",
       });
     } finally {
@@ -97,17 +81,17 @@ const DivisionManagement = () => {
 
   const handleEdit = (div: Division) => {
     setEditingDiv(div);
-    setFormData({ name: div.name, department_id: div.department_id.toString() });
+    setFormData({ name: div.name, department_id: div.department_id });
     setShowForm(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this division?")) {
       return;
     }
     
     try {
-      // Simulate delete
+      await divisionService.delete(id);
       setDivisions(divisions.filter(div => div.id !== id));
       toast({
         title: "Success",
@@ -116,7 +100,7 @@ const DivisionManagement = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete division",
+        description: error instanceof Error ? error.message : "Failed to delete division",
         variant: "destructive",
       });
     }
@@ -199,22 +183,24 @@ const DivisionManagement = () => {
                   disabled={submitting}
                 />
               </div>
-              <div>
-                <Label htmlFor="department">Department</Label>
-                <select
-                  id="department"
-                  value={formData.department_id}
-                  onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
-                  className="w-full p-2 border rounded-md"
-                  required
-                  disabled={submitting}
-                >
-                  <option value="">Select Department</option>
-                  {departments.map(dept => (
-                    <option key={dept.id} value={dept.id}>{dept.name}</option>
-                  ))}
-                </select>
-              </div>
+              {!editingDiv && (
+                <div>
+                  <Label htmlFor="department">Department</Label>
+                  <select
+                    id="department"
+                    value={formData.department_id}
+                    onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
+                    className="w-full p-2 border rounded-md"
+                    required
+                    disabled={submitting}
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex space-x-2">
                 <Button 
                   type="submit" 

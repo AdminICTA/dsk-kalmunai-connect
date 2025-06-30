@@ -1,16 +1,16 @@
 
-const API_BASE_URL = 'http://localhost/backend/api'; // Update this to your actual backend URL
+const API_BASE_URL = 'http://localhost/backend/api';
 
 export interface Division {
-  id: number;
+  id: string;
   name: string;
-  department_id: number;
+  department_id: string;
   department_name: string;
-  status: string;
+  status?: string;
 }
 
 export const divisionService = {
-  async getAll(departmentId?: number): Promise<Division[]> {
+  async getAll(departmentId?: string): Promise<Division[]> {
     try {
       const url = departmentId 
         ? `${API_BASE_URL}/divisions/list?department_id=${departmentId}`
@@ -26,6 +26,80 @@ export const divisionService = {
       return data.divisions || [];
     } catch (error) {
       console.error('Error fetching divisions:', error);
+      throw error;
+    }
+  },
+
+  async create(name: string, departmentId: string): Promise<Division> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/divisions/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          name,
+          dep_id: departmentId
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to create division');
+      }
+      
+      return data.division;
+    } catch (error) {
+      console.error('Error creating division:', error);
+      throw error;
+    }
+  },
+
+  async update(id: string, name: string): Promise<Division> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/divisions/update`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          id,
+          name
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update division');
+      }
+      
+      return data.division;
+    } catch (error) {
+      console.error('Error updating division:', error);
+      throw error;
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/divisions/delete?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to delete division');
+      }
+    } catch (error) {
+      console.error('Error deleting division:', error);
       throw error;
     }
   }
