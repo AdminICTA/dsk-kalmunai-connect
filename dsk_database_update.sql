@@ -1,75 +1,242 @@
 
 -- Update existing database structure to support the new backend API
+-- This script updates the existing dskalmun_Rapp database to match backend expectations
 
--- First, check if we need to modify the departments table structure
-SET @dbname = DATABASE();
-SET @tablename = 'departments';
-SET @columnname = 'department_id';
+USE dskalmun_Rapp;
 
--- Check if department_id column exists
-SELECT COUNT(*) INTO @column_exists 
-FROM information_schema.COLUMNS 
-WHERE TABLE_SCHEMA = @dbname 
-  AND TABLE_NAME = @tablename 
-  AND COLUMN_NAME = @columnname;
+-- First, let's check the current structure and update departments table
+-- The existing table has department_id as INT, but we need to ensure it has the right structure
 
--- Update departments table to match backend expectations
-SET @sql = IF(@column_exists = 0, 
-  'ALTER TABLE departments 
-   ADD COLUMN department_id INT AUTO_INCREMENT PRIMARY KEY FIRST,
-   ADD COLUMN status ENUM(''active'', ''inactive'') DEFAULT ''active'' AFTER name,
-   ADD COLUMN department_name VARCHAR(100) NOT NULL AFTER department_id;',
-  'SELECT ''Columns already exist'' AS message;'
-);
+-- Add missing columns to departments table if they don't exist
+ALTER TABLE departments 
+ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive') DEFAULT 'active' AFTER department_name;
 
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
--- Copy existing data to new structure
-UPDATE departments SET department_name = name WHERE department_name IS NULL OR department_name = '';
+-- Update existing departments to have active status
 UPDATE departments SET status = 'active' WHERE status IS NULL;
 
--- Update divisions table
+-- Add missing columns to divisions table if they don't exist
 ALTER TABLE divisions 
-ADD COLUMN IF NOT EXISTS division_id INT PRIMARY KEY AUTO_INCREMENT FIRST,
-ADD COLUMN IF NOT EXISTS division_name VARCHAR(100) NOT NULL AFTER division_id,
-ADD COLUMN IF NOT EXISTS department_id INT NOT NULL AFTER division_name;
+ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive') DEFAULT 'active' AFTER department_id;
 
--- Copy existing data to new structure
-UPDATE divisions SET division_name = name WHERE division_name IS NULL OR division_name = '';
+-- Update existing divisions to have active status
+UPDATE divisions SET status = 'active' WHERE status IS NULL;
 
--- Update foreign key relationships
-ALTER TABLE divisions DROP FOREIGN KEY IF EXISTS divisions_ibfk_1;
-ALTER TABLE divisions ADD CONSTRAINT divisions_dept_fk FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE CASCADE;
+-- Update public_registry table to use correct column names
+-- Check if columns need to be renamed
+SET @sql = CASE 
+    WHEN (SELECT COUNT(*) FROM information_schema.COLUMNS 
+          WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+          AND TABLE_NAME = 'public_registry' 
+          AND COLUMN_NAME = 'dep_id') > 0
+    THEN 'ALTER TABLE public_registry CHANGE COLUMN dep_id department_id INT NOT NULL'
+    ELSE 'SELECT "Column dep_id does not exist" as message'
+END;
 
--- Ensure users table has the correct password column name
-ALTER TABLE users CHANGE COLUMN password password VARCHAR(255) NOT NULL;
+-- Execute the rename for dep_id to department_id
+SET @sql_dep = CONCAT('ALTER TABLE public_registry CHANGE COLUMN dep_id department_id INT NOT NULL');
+SET @sql_div = CONCAT('ALTER TABLE public_registry CHANGE COLUMN div_id division_id INT NOT NULL');
 
--- Update public_users table for API compatibility
-ALTER TABLE public_users 
-ADD COLUMN IF NOT EXISTS username VARCHAR(50) UNIQUE AFTER nic_number,
-ADD COLUMN IF NOT EXISTS password VARCHAR(255) AFTER username;
+-- Only execute if columns exist
+SET @check_dep = (SELECT COUNT(*) FROM information_schema.COLUMNS 
+                  WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+                  AND TABLE_NAME = 'public_registry' 
+                  AND COLUMN_NAME = 'dep_id');
 
--- Set default username/password for existing public users (using NIC)
-UPDATE public_users SET username = nic_number WHERE username IS NULL;
-UPDATE public_users SET password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' WHERE password IS NULL;
+SET @check_div = (SELECT COUNT(*) FROM information_schema.COLUMNS 
+                  WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+                  AND TABLE_NAME = 'public_registry' 
+                  AND COLUMN_NAME = 'div_id');
 
--- First update the departments and divisions tables to use consistent ID types
-ALTER TABLE departments MODIFY COLUMN department_id VARCHAR(10) NOT NULL;
-ALTER TABLE divisions MODIFY COLUMN division_id VARCHAR(10) NOT NULL;
+-- Update public_registry column names if needed
+-- This is a safer approach without dynamic SQL
+DROP PROCEDURE IF EXISTS UpdateRegistryColumns;
 
--- Then update the public_registry table
-ALTER TABLE public_registry 
-CHANGE COLUMN dep_id department_id VARCHAR(10) NOT NULL,
-CHANGE COLUMN div_id division_id VARCHAR(10) NOT NULL;
+DELIMITER //
+CREATE PROCEDURE UpdateRegistryColumns()
+BEGIN
+    -- Check and update dep_id to department_id
+    IF EXISTS (SELECT * FROM information_schema.COLUMNS 
+               WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+               AND TABLE_NAME = 'public_registry' 
+               AND COLUMN_NAME = 'dep_id') THEN
+        ALTER TABLE public_registry CHANGE COLUMN dep_id department_id INT NOT NULL;
+    END IF;
+    
+    -- Check and update div_id to division_id
+    IF EXISTS (SELECT * FROM information_schema.COLUMNS 
+               WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+               AND TABLE_NAME = 'public_registry' 
+               AND COLUMN_NAME = 'div_id') THEN
+        ALTER TABLE public_registry CHANGE COLUMN div_id division_id INT NOT NULL;
+    END IF;
+END //
+DELIMITER ;
+
+-- Execute the procedure
+CALL UpdateRegistryColumns();
+DROP PROCEDURE UpdateRegistryColumns;
+
+-- Update applications table to use correct column names
+DROP PROCEDURE IF EXISTS UpdateApplicationsColumns;
+
+DELIMITER //
+CREATE PROCEDURE UpdateApplicationsColumns()
+BEGIN
+    -- Check and update div_id to division_id
+    IF EXISTS (SELECT * FROM information_schema.COLUMNS 
+               WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+               AND TABLE_NAME = 'applications' 
+               AND COLUMN_NAME = 'div_id') THEN
+        ALTER TABLE applications CHANGE COLUMN div_id division_id INT NOT NULL;
+    END IF;
+END //
+DELIMITER ;
+
+-- Execute the procedure
+CALL UpdateApplicationsColumns();
+DROP PROCEDURE UpdateApplicationsColumns;
+
+-- Update documents table to use correct column names
+DROP PROCEDURE IF EXISTS UpdateDocumentsColumns;
+
+DELIMITER //
+CREATE PROCEDURE UpdateDocumentsColumns()
+BEGIN
+    -- Check and update div_id to division_id
+    IF EXISTS (SELECT * FROM information_schema.COLUMNS 
+               WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+               AND TABLE_NAME = 'documents' 
+               AND COLUMN_NAME = 'div_id') THEN
+        ALTER TABLE documents CHANGE COLUMN div_id division_id INT NOT NULL;
+    END IF;
+END //
+DELIMITER ;
+
+-- Execute the procedure
+CALL UpdateDocumentsColumns();
+DROP PROCEDURE UpdateDocumentsColumns;
+
+-- Update token_management table to use correct column names
+DROP PROCEDURE IF EXISTS UpdateTokenManagementColumns;
+
+DELIMITER //
+CREATE PROCEDURE UpdateTokenManagementColumns()
+BEGIN
+    -- Check and update dep_id to department_id
+    IF EXISTS (SELECT * FROM information_schema.COLUMNS 
+               WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+               AND TABLE_NAME = 'token_management' 
+               AND COLUMN_NAME = 'dep_id') THEN
+        ALTER TABLE token_management CHANGE COLUMN dep_id department_id INT NOT NULL;
+    END IF;
+    
+    -- Check and update div_id to division_id
+    IF EXISTS (SELECT * FROM information_schema.COLUMNS 
+               WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+               AND TABLE_NAME = 'token_management' 
+               AND COLUMN_NAME = 'div_id') THEN
+        ALTER TABLE token_management CHANGE COLUMN div_id division_id INT NOT NULL;
+    END IF;
+END //
+DELIMITER ;
+
+-- Execute the procedure
+CALL UpdateTokenManagementColumns();
+DROP PROCEDURE UpdateTokenManagementColumns;
+
+-- Update users table to use correct column names
+DROP PROCEDURE IF EXISTS UpdateUsersColumns;
+
+DELIMITER //
+CREATE PROCEDURE UpdateUsersColumns()
+BEGIN
+    -- Check and update dep_id to department_id
+    IF EXISTS (SELECT * FROM information_schema.COLUMNS 
+               WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+               AND TABLE_NAME = 'users' 
+               AND COLUMN_NAME = 'dep_id') THEN
+        ALTER TABLE users CHANGE COLUMN dep_id department_id INT NOT NULL;
+    END IF;
+    
+    -- Check and update div_id to division_id
+    IF EXISTS (SELECT * FROM information_schema.COLUMNS 
+               WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+               AND TABLE_NAME = 'users' 
+               AND COLUMN_NAME = 'div_id') THEN
+        ALTER TABLE users CHANGE COLUMN div_id division_id INT NOT NULL;
+    END IF;
+END //
+DELIMITER ;
+
+-- Execute the procedure
+CALL UpdateUsersColumns();
+DROP PROCEDURE UpdateUsersColumns;
+
+-- Update subject_staff table to use correct column names
+DROP PROCEDURE IF EXISTS UpdateSubjectStaffColumns;
+
+DELIMITER //
+CREATE PROCEDURE UpdateSubjectStaffColumns()
+BEGIN
+    -- Check and update dep_id to department_id
+    IF EXISTS (SELECT * FROM information_schema.COLUMNS 
+               WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+               AND TABLE_NAME = 'subject_staff' 
+               AND COLUMN_NAME = 'dep_id') THEN
+        ALTER TABLE subject_staff CHANGE COLUMN dep_id department_id INT NOT NULL;
+    END IF;
+END //
+DELIMITER ;
+
+-- Execute the procedure
+CALL UpdateSubjectStaffColumns();
+DROP PROCEDURE UpdateSubjectStaffColumns;
+
+-- Update subject_staff_divisions table to use correct column names
+DROP PROCEDURE IF EXISTS UpdateSubjectStaffDivisionsColumns;
+
+DELIMITER //
+CREATE PROCEDURE UpdateSubjectStaffDivisionsColumns()
+BEGIN
+    -- Check and update div_id to division_id
+    IF EXISTS (SELECT * FROM information_schema.COLUMNS 
+               WHERE TABLE_SCHEMA = 'dskalmun_Rapp' 
+               AND TABLE_NAME = 'subject_staff_divisions' 
+               AND COLUMN_NAME = 'div_id') THEN
+        ALTER TABLE subject_staff_divisions CHANGE COLUMN div_id division_id INT NOT NULL;
+    END IF;
+END //
+DELIMITER ;
+
+-- Execute the procedure
+CALL UpdateSubjectStaffDivisionsColumns();
+DROP PROCEDURE UpdateSubjectStaffDivisionsColumns;
 
 -- Ensure proper indexing for performance
 CREATE INDEX IF NOT EXISTS idx_departments_status ON departments(status);
+CREATE INDEX IF NOT EXISTS idx_divisions_status ON divisions(status);
 CREATE INDEX IF NOT EXISTS idx_users_role_status ON users(role, is_active);
 CREATE INDEX IF NOT EXISTS idx_public_users_active ON public_users(is_active);
-CREATE INDEX IF NOT EXISTS idx_documents_division_active ON documents(div_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_documents_division_active ON documents(division_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_registry_status_date ON public_registry(status, visit_date);
+
+-- Update existing user passwords to be properly hashed (if not already)
+UPDATE users 
+SET password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' 
+WHERE password NOT LIKE '$2y$%' AND password != '';
+
+UPDATE subject_staff 
+SET password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' 
+WHERE password NOT LIKE '$2y$%' AND password != '';
+
+-- Update public_users to have username and password if missing
+UPDATE public_users 
+SET username = nic_number 
+WHERE username IS NULL OR username = '';
+
+UPDATE public_users 
+SET password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' 
+WHERE password IS NULL OR password = '';
 
 -- Create API key table for future use
 CREATE TABLE IF NOT EXISTS api_keys (
@@ -84,45 +251,8 @@ CREATE TABLE IF NOT EXISTS api_keys (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Insert test data for development (optional)
--- First ensure the department_name column exists
-SET @sql = IF(
-  (SELECT COUNT(*) FROM information_schema.COLUMNS 
-   WHERE TABLE_SCHEMA = DATABASE() 
-   AND TABLE_NAME = 'departments' 
-   AND COLUMN_NAME = 'department_name') > 0,
-  'INSERT IGNORE INTO departments (department_id, department_name, status) VALUES 
-  (''DEP001'', ''Administration'', ''active''),
-  (''DEP002'', ''Finance'', ''active''),
-  (''DEP003'', ''IT Services'', ''active''),
-  (''DEP004'', ''Human Resources'', ''active''),
-  (''DEP005'', ''Public Services'', ''active'');',
-  'SELECT ''Skipping department insert - department_name column not found'';'
-);
-
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
--- Insert divisions with proper department references
-INSERT IGNORE INTO divisions (division_id, division_name, department_id) 
-SELECT 'DIV001', 'General Administration', department_id FROM departments WHERE department_id = 'DEP001' LIMIT 1
-UNION ALL
-SELECT 'DIV002', 'Accounting', department_id FROM departments WHERE department_id = 'DEP002' LIMIT 1
-UNION ALL  
-SELECT 'DIV003', 'System Management', department_id FROM departments WHERE department_id = 'DEP003' LIMIT 1
-UNION ALL
-SELECT 'DIV004', 'Staff Management', department_id FROM departments WHERE department_id = 'DEP004' LIMIT 1
-UNION ALL
-SELECT 'DIV005', 'Birth Certificates', department_id FROM departments WHERE department_id = 'DEP005' LIMIT 1;
-
--- Update existing user passwords to be properly hashed
-UPDATE users SET password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' 
-WHERE password NOT LIKE '$2y$%';
-
-UPDATE subject_staff SET password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' 
-WHERE password NOT LIKE '$2y$%';
-
--- Show updated table structures
-SHOW TABLES;
+-- Show completion message
 SELECT 'Database update completed successfully' as STATUS;
+
+-- Show updated table structures for verification
+SHOW TABLES;
