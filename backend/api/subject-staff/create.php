@@ -7,25 +7,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $database = new Database();
     $db = $database->getConnection();
     
+    // Get JSON input
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
     
-    $required = ['name', 'post', 'dep_id', 'divisions', 'username', 'password'];
-    foreach ($required as $field) {
-        if (!isset($data[$field]) || (is_string($data[$field]) && empty(trim($data[$field])))) {
+    // Validate input
+    $required_fields = ['name', 'post', 'dep_id', 'divisions', 'username', 'password'];
+    foreach ($required_fields as $field) {
+        if (!isset($data[$field]) || empty($data[$field])) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => ucfirst($field) . ' is required']);
             exit;
         }
     }
     
-    if (empty($data['divisions']) || !is_array($data['divisions'])) {
+    if (!is_array($data['divisions']) || empty($data['divisions'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'At least one division must be selected']);
         exit;
     }
     
     try {
+        // Start transaction
         $db->beginTransaction();
         
         // Check if username already exists
@@ -40,14 +43,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             exit;
         }
         
-        // Generate subject staff ID
-        $sub_id = 'SUB' . str_pad(mt_rand(1, 999), 3, '0', STR_PAD_LEFT);
+        // Generate sub_id
+        $id_query = "SELECT MAX(CAST(SUBSTRING(sub_id, 4) AS UNSIGNED)) as max_id FROM subject_staff WHERE sub_id LIKE 'SUB%'";
+        $id_stmt = $db->prepare($id_query);
+        $id_stmt->execute();
+        $result = $id_stmt->fetch(PDO::FETCH_ASSOC);
+        $next_num = ($result['max_id'] ?? 0) + 1;
+        $sub_id = 'SUB' . str_pad($next_num, 3, '0', STR_PAD_LEFT);
         
         // Hash password
         $hashed_password = password_hash($data['password'], PASSWORD_DEFAULT);
         
-        // Insert new subject staff
-        $query = "INSERT INTO subject_staff (sub_id, name, post, department_id, username, password, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())";
+        // Insert subject staff
+        $query = "INSERT INTO subject_staff (sub_id, name, post, department_id, username, password, is_active, created_at) 
+                  VALUES (?, ?, ?, ?, ?, ?, 1, NOW())";
         $stmt = $db->prepare($query);
         $stmt->execute([
             $sub_id,
@@ -66,6 +75,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $div_stmt->execute([$sub_id, $division_id]);
         }
         
+        // Get department name
+        $dept_query = "SELECT department_name FROM departments WHERE department_id = ?";
+        $dept_stmt = $db->prepare($dept_query);
+        $dept_stmt->execute([$data['dep_id']]);
+        $dept_name = $dept_stmt->fetchColumn();
+        
         $db->commit();
         
         http_response_code(201);
@@ -75,6 +90,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'staff' => [
                 'sub_id' => $sub_id,
                 'name' => $data['name'],
+                'post' => $data['post'],
+                'dep_id' => $data['dep_id'],
+                'department' => $dept_name,
+                'divisions' => $data['divisions'],
                 'username' => $data['username']
             ]
         ]);

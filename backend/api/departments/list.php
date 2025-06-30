@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $db = $database->getConnection();
     
     try {
-        $query = "SELECT department_id, department_name FROM departments WHERE status = 'active' ORDER BY department_name";
+        $query = "SELECT department_id, department_name FROM departments WHERE status = 'active' ORDER BY department_id";
         $stmt = $db->prepare($query);
         $stmt->execute();
         

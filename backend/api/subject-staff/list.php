@@ -8,21 +8,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $db = $database->getConnection();
     
     try {
-        $query = "SELECT ss.sub_id, ss.name, ss.post, ss.department_id, d.department_name, ss.username
-                  FROM subject_staff ss
-                  JOIN departments d ON ss.department_id = d.department_id
-                  WHERE ss.is_active = 1
-                  ORDER BY ss.created_at DESC";
+        $query = "SELECT s.sub_id, s.name, s.post, s.department_id, d.department_name, s.username
+                  FROM subject_staff s
+                  JOIN departments d ON s.department_id = d.department_id 
+                  WHERE s.is_active = 1
+                  ORDER BY s.created_at DESC";
         $stmt = $db->prepare($query);
         $stmt->execute();
         
         $staff = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            // Get divisions for this staff member
-            $div_query = "SELECT ssd.division_id, div.division_name 
-                          FROM subject_staff_divisions ssd
-                          JOIN divisions div ON ssd.division_id = div.division_id
-                          WHERE ssd.sub_id = ?";
+            // Get assigned divisions for this staff member
+            $div_query = "SELECT div.division_id, div.division_name 
+                         FROM subject_staff_divisions ssd
+                         JOIN divisions div ON ssd.division_id = div.division_id
+                         WHERE ssd.sub_id = ?";
             $div_stmt = $db->prepare($div_query);
             $div_stmt->execute([$row['sub_id']]);
             
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
                 'divisions' => $divisions,
                 'divisionNames' => $divisionNames,
                 'username' => $row['username'],
-                'password' => '' // Don't return actual password
+                'password' => '****' // Don't expose actual password
             ];
         }
         
