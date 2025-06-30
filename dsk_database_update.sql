@@ -1,11 +1,30 @@
 
 -- Update existing database structure to support the new backend API
 
+-- First, check if we need to modify the departments table structure
+SET @dbname = DATABASE();
+SET @tablename = 'departments';
+SET @columnname = 'department_id';
+
+-- Check if department_id column exists
+SELECT COUNT(*) INTO @column_exists 
+FROM information_schema.COLUMNS 
+WHERE TABLE_SCHEMA = @dbname 
+  AND TABLE_NAME = @tablename 
+  AND COLUMN_NAME = @columnname;
+
 -- Update departments table to match backend expectations
-ALTER TABLE departments 
-ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive') DEFAULT 'active' AFTER name,
-ADD COLUMN IF NOT EXISTS department_id INT PRIMARY KEY AUTO_INCREMENT FIRST,
-ADD COLUMN IF NOT EXISTS department_name VARCHAR(100) NOT NULL AFTER department_id;
+SET @sql = IF(@column_exists = 0, 
+  'ALTER TABLE departments 
+   ADD COLUMN department_id INT AUTO_INCREMENT PRIMARY KEY FIRST,
+   ADD COLUMN status ENUM(''active'', ''inactive'') DEFAULT ''active'' AFTER name,
+   ADD COLUMN department_name VARCHAR(100) NOT NULL AFTER department_id;',
+  'SELECT ''Columns already exist'' AS message;'
+);
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Copy existing data to new structure
 UPDATE departments SET department_name = name WHERE department_name IS NULL OR department_name = '';
@@ -36,7 +55,11 @@ ADD COLUMN IF NOT EXISTS password VARCHAR(255) AFTER username;
 UPDATE public_users SET username = nic_number WHERE username IS NULL;
 UPDATE public_users SET password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' WHERE password IS NULL;
 
--- Update public_registry table for token management
+-- First update the departments and divisions tables to use consistent ID types
+ALTER TABLE departments MODIFY COLUMN department_id VARCHAR(10) NOT NULL;
+ALTER TABLE divisions MODIFY COLUMN division_id VARCHAR(10) NOT NULL;
+
+-- Then update the public_registry table
 ALTER TABLE public_registry 
 CHANGE COLUMN dep_id department_id VARCHAR(10) NOT NULL,
 CHANGE COLUMN div_id division_id VARCHAR(10) NOT NULL;
@@ -62,23 +85,36 @@ CREATE TABLE IF NOT EXISTS api_keys (
 );
 
 -- Insert test data for development (optional)
-INSERT IGNORE INTO departments (dep_id, department_name, status) VALUES 
-('DEP001', 'Administration', 'active'),
-('DEP002', 'Finance', 'active'),
-('DEP003', 'IT Services', 'active'),
-('DEP004', 'Human Resources', 'active'),
-('DEP005', 'Public Services', 'active');
+-- First ensure the department_name column exists
+SET @sql = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS 
+   WHERE TABLE_SCHEMA = DATABASE() 
+   AND TABLE_NAME = 'departments' 
+   AND COLUMN_NAME = 'department_name') > 0,
+  'INSERT IGNORE INTO departments (department_id, department_name, status) VALUES 
+  (''DEP001'', ''Administration'', ''active''),
+  (''DEP002'', ''Finance'', ''active''),
+  (''DEP003'', ''IT Services'', ''active''),
+  (''DEP004'', ''Human Resources'', ''active''),
+  (''DEP005'', ''Public Services'', ''active'');',
+  'SELECT ''Skipping department insert - department_name column not found'';'
+);
 
-INSERT IGNORE INTO divisions (div_id, division_name, department_id) 
-SELECT 'DIV001', 'General Administration', department_id FROM departments WHERE dep_id = 'DEP001'
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Insert divisions with proper department references
+INSERT IGNORE INTO divisions (division_id, division_name, department_id) 
+SELECT 'DIV001', 'General Administration', department_id FROM departments WHERE department_id = 'DEP001' LIMIT 1
 UNION ALL
-SELECT 'DIV002', 'Accounting', department_id FROM departments WHERE dep_id = 'DEP002'
+SELECT 'DIV002', 'Accounting', department_id FROM departments WHERE department_id = 'DEP002' LIMIT 1
 UNION ALL  
-SELECT 'DIV003', 'System Management', department_id FROM departments WHERE dep_id = 'DEP003'
+SELECT 'DIV003', 'System Management', department_id FROM departments WHERE department_id = 'DEP003' LIMIT 1
 UNION ALL
-SELECT 'DIV004', 'Staff Management', department_id FROM departments WHERE dep_id = 'DEP004'
+SELECT 'DIV004', 'Staff Management', department_id FROM departments WHERE department_id = 'DEP004' LIMIT 1
 UNION ALL
-SELECT 'DIV005', 'Birth Certificates', department_id FROM departments WHERE dep_id = 'DEP005';
+SELECT 'DIV005', 'Birth Certificates', department_id FROM departments WHERE department_id = 'DEP005' LIMIT 1;
 
 -- Update existing user passwords to be properly hashed
 UPDATE users SET password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' 
