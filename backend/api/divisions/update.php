@@ -2,12 +2,8 @@
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
-include_once '../../config/auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
-    $auth = new Auth();
-    $user = $auth->authenticate('Admin');
-    
     $database = new Database();
     $db = $database->getConnection();
     
@@ -27,10 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
     
     try {
         // Check if division exists
-        $check_query = "SELECT d.div_id, d.dep_id, dept.department_name 
+        $check_query = "SELECT d.division_id, d.department_id, dept.department_name 
                         FROM divisions d 
-                        JOIN departments dept ON d.dep_id = dept.department_id 
-                        WHERE d.div_id = ? AND d.status = 'active'";
+                        JOIN departments dept ON d.department_id = dept.department_id 
+                        WHERE d.division_id = ? AND d.status = 'active'";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->execute([$id]);
         $division = $check_stmt->fetch(PDO::FETCH_ASSOC);
@@ -42,9 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
         }
         
         // Check if new name already exists in the same department (excluding current division)
-        $name_check_query = "SELECT COUNT(*) FROM divisions WHERE name = ? AND dep_id = ? AND div_id != ? AND status = 'active'";
+        $name_check_query = "SELECT COUNT(*) FROM divisions WHERE division_name = ? AND department_id = ? AND division_id != ? AND status = 'active'";
         $name_check_stmt = $db->prepare($name_check_query);
-        $name_check_stmt->execute([$name, $division['dep_id'], $id]);
+        $name_check_stmt->execute([$name, $division['department_id'], $id]);
         
         if ($name_check_stmt->fetchColumn() > 0) {
             http_response_code(409);
@@ -53,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
         }
         
         // Update division
-        $query = "UPDATE divisions SET name = ?, updated_at = NOW() WHERE div_id = ?";
+        $query = "UPDATE divisions SET division_name = ?, updated_at = NOW() WHERE division_id = ?";
         $stmt = $db->prepare($query);
         $stmt->execute([$name, $id]);
         
@@ -64,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
             'division' => [
                 'id' => $id,
                 'name' => $name,
-                'department_id' => $division['dep_id'],
+                'department_id' => $division['department_id'],
                 'department_name' => $division['department_name']
             ]
         ]);

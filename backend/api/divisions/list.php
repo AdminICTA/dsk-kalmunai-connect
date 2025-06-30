@@ -12,20 +12,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     try {
         if (!empty($department_id)) {
             // Get divisions for specific department
-            $query = "SELECT d.div_id, d.name, d.dep_id, dept.department_name 
+            $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
                       FROM divisions d 
-                      JOIN departments dept ON d.dep_id = dept.department_id 
-                      WHERE d.dep_id = ? AND d.status = 'active' 
-                      ORDER BY d.name";
+                      JOIN departments dept ON d.department_id = dept.department_id 
+                      WHERE d.department_id = ? AND d.status = 'active' 
+                      ORDER BY d.division_name";
             $stmt = $db->prepare($query);
             $stmt->execute([$department_id]);
         } else {
             // Get all divisions
-            $query = "SELECT d.div_id, d.name, d.dep_id, dept.department_name 
+            $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
                       FROM divisions d 
-                      JOIN departments dept ON d.dep_id = dept.department_id 
+                      JOIN departments dept ON d.department_id = dept.department_id 
                       WHERE d.status = 'active' 
-                      ORDER BY dept.department_name, d.name";
+                      ORDER BY dept.department_name, d.division_name";
             $stmt = $db->prepare($query);
             $stmt->execute();
         }
@@ -33,9 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         $divisions = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $divisions[] = [
-                'id' => $row['div_id'],
-                'name' => $row['name'],
-                'department_id' => $row['dep_id'],
+                'id' => $row['division_id'],
+                'name' => $row['division_name'],
+                'department_id' => $row['department_id'],
                 'department_name' => $row['department_name']
             ];
         }

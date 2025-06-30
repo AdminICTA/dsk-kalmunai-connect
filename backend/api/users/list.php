@@ -2,21 +2,17 @@
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
-include_once '../../config/auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    $auth = new Auth();
-    $user = $auth->authenticate('Admin');
-    
     $database = new Database();
     $db = $database->getConnection();
     
     try {
         $query = "SELECT u.user_id, u.name, u.post, u.role, u.username, u.is_active, 
-                         d.department_name, div.name as division_name
+                         d.department_name, div.division_name
                   FROM users u
                   JOIN departments d ON u.department_id = d.department_id
-                  JOIN divisions div ON u.division_id = div.div_id
+                  JOIN divisions div ON u.division_id = div.division_id
                   ORDER BY u.created_at DESC";
         $stmt = $db->prepare($query);
         $stmt->execute();

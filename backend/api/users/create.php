@@ -2,19 +2,15 @@
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
-include_once '../../config/auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $auth = new Auth();
-    $user = $auth->authenticate('Admin');
-    
     $database = new Database();
     $db = $database->getConnection();
     
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
     
-    $required = ['name', 'post', 'dep_id', 'div_id', 'role', 'username', 'password'];
+    $required = ['name', 'post', 'department_id', 'division_id', 'role', 'username', 'password'];
     foreach ($required as $field) {
         if (!isset($data[$field]) || empty(trim($data[$field]))) {
             http_response_code(400);
@@ -48,14 +44,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $hashed_password = password_hash($data['password'], PASSWORD_DEFAULT);
         
         // Insert new user
-        $query = "INSERT INTO users (user_id, name, post, dep_id, div_id, role, username, password, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())";
+        $query = "INSERT INTO users (user_id, name, post, department_id, division_id, role, username, password, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())";
         $stmt = $db->prepare($query);
         $stmt->execute([
             $user_id,
             $data['name'],
             $data['post'],
-            $data['dep_id'],
-            $data['div_id'],
+            $data['department_id'],
+            $data['division_id'],
             $data['role'],
             $data['username'],
             $hashed_password

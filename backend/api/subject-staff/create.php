@@ -2,30 +2,26 @@
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
-include_once '../../config/auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $auth = new Auth();
-    $user = $auth->authenticate('Admin');
-    
     $database = new Database();
     $db = $database->getConnection();
     
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
     
-    $required = ['name', 'post', 'dep_id', 'username', 'password', 'divisions'];
+    $required = ['name', 'post', 'dep_id', 'divisions', 'username', 'password'];
     foreach ($required as $field) {
-        if (!isset($data[$field]) || ($field !== 'divisions' && empty(trim($data[$field])))) {
+        if (!isset($data[$field]) || (is_string($data[$field]) && empty(trim($data[$field])))) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => ucfirst($field) . ' is required']);
             exit;
         }
     }
     
-    if (!is_array($data['divisions']) || empty($data['divisions'])) {
+    if (empty($data['divisions']) || !is_array($data['divisions'])) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'At least one division must be assigned']);
+        echo json_encode(['success' => false, 'message' => 'At least one division must be selected']);
         exit;
     }
     
@@ -38,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $check_stmt->execute([$data['username']]);
         
         if ($check_stmt->fetchColumn() > 0) {
+            $db->rollBack();
             http_response_code(409);
             echo json_encode(['success' => false, 'message' => 'Username already exists']);
             exit;
@@ -49,8 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Hash password
         $hashed_password = password_hash($data['password'], PASSWORD_DEFAULT);
         
-        // Insert subject staff
-        $query = "INSERT INTO subject_staff (sub_id, name, post, dep_id, username, password, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())";
+        // Insert new subject staff
+        $query = "INSERT INTO subject_staff (sub_id, name, post, department_id, username, password, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())";
         $stmt = $db->prepare($query);
         $stmt->execute([
             $sub_id,
@@ -61,12 +58,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $hashed_password
         ]);
         
-        // Assign divisions
-        $div_query = "INSERT INTO subject_staff_divisions (sub_id, div_id, assigned_at) VALUES (?, ?, NOW())";
+        // Insert division assignments
+        $div_query = "INSERT INTO subject_staff_divisions (sub_id, division_id) VALUES (?, ?)";
         $div_stmt = $db->prepare($div_query);
         
-        foreach ($data['divisions'] as $div_id) {
-            $div_stmt->execute([$sub_id, $div_id]);
+        foreach ($data['divisions'] as $division_id) {
+            $div_stmt->execute([$sub_id, $division_id]);
         }
         
         $db->commit();
@@ -75,15 +72,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         echo json_encode([
             'success' => true,
             'message' => 'Subject staff created successfully',
-            'subject_staff' => [
-                'id' => $sub_id,
+            'staff' => [
+                'sub_id' => $sub_id,
                 'name' => $data['name'],
-                'username' => $data['username'],
-                'assigned_divisions' => count($data['divisions'])
+                'username' => $data['username']
             ]
         ]);
     } catch (PDOException $exception) {
-        $db->rollback();
+        $db->rollBack();
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $exception->getMessage()]);
     }

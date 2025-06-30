@@ -2,12 +2,8 @@
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
-include_once '../../config/auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $auth = new Auth();
-    $user = $auth->authenticate('Admin');
-    
     $database = new Database();
     $db = $database->getConnection();
     
@@ -39,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         // Check if division already exists in this department
-        $check_query = "SELECT COUNT(*) FROM divisions WHERE name = ? AND dep_id = ? AND status = 'active'";
+        $check_query = "SELECT COUNT(*) FROM divisions WHERE division_name = ? AND department_id = ? AND status = 'active'";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->execute([$name, $dep_id]);
         
@@ -50,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         // Insert new division
-        $query = "INSERT INTO divisions (name, dep_id, status, created_at) VALUES (?, ?, 'active', NOW())";
+        $query = "INSERT INTO divisions (division_name, department_id, status, created_at) VALUES (?, ?, 'active', NOW())";
         $stmt = $db->prepare($query);
         $stmt->execute([$name, $dep_id]);
         
