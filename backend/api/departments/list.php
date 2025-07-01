@@ -8,15 +8,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $db = $database->getConnection();
     
     try {
-        $query = "SELECT department_id, department_name FROM departments WHERE status = 'active' ORDER BY department_id";
+        $query = "SELECT dep_id, name FROM departments WHERE status = 'active' ORDER BY dep_id";
         $stmt = $db->prepare($query);
         $stmt->execute();
         
         $departments = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $departments[] = [
-                'id' => $row['department_id'],
-                'name' => $row['department_name']
+                'id' => $row['dep_id'],
+                'name' => $row['name']
             ];
         }
         

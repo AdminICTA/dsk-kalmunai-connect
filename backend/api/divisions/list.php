@@ -11,19 +11,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     
     try {
         if ($department_id) {
-            $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
+            $query = "SELECT d.division_id, d.name as division_name, d.dep_id, dept.name as department_name 
                      FROM divisions d 
-                     LEFT JOIN departments dept ON d.department_id = dept.department_id 
-                     WHERE d.department_id = ? AND d.status = 'active'
-                     ORDER BY d.division_name";
+                     LEFT JOIN departments dept ON d.dep_id = dept.dep_id 
+                     WHERE d.dep_id = ? AND d.status = 'active'
+                     ORDER BY d.name";
             $stmt = $db->prepare($query);
             $stmt->execute([$department_id]);
         } else {
-            $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
+            $query = "SELECT d.division_id, d.name as division_name, d.dep_id, dept.name as department_name 
                      FROM divisions d 
-                     LEFT JOIN departments dept ON d.department_id = dept.department_id 
+                     LEFT JOIN departments dept ON d.dep_id = dept.dep_id 
                      WHERE d.status = 'active'
-                     ORDER BY dept.department_name, d.division_name";
+                     ORDER BY dept.name, d.name";
             $stmt = $db->prepare($query);
             $stmt->execute();
         }
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             $divisions[] = [
                 'id' => $row['division_id'],
                 'name' => $row['division_name'],
-                'department_id' => $row['department_id'],
+                'department_id' => $row['dep_id'],
                 'department_name' => $row['department_name'] ?? 'Unknown Department',
                 'status' => 'active'
             ];

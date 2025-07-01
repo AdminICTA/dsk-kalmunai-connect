@@ -8,11 +8,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $db = $database->getConnection();
     
     try {
-        $query = "SELECT u.user_id, u.name, u.post, u.dep_id, u.div_id, u.role, u.username, u.is_active,
-                         d.department_name, div.division_name
+        $query = "SELECT u.user_id, u.name, u.post, u.dep_id, u.division_id, u.role, u.username, u.is_active,
+                         d.name as department_name, div.name as division_name
                   FROM users u
-                  LEFT JOIN departments d ON u.dep_id = d.department_id
-                  LEFT JOIN divisions div ON u.div_id = div.division_id
+                  LEFT JOIN departments d ON u.dep_id = d.dep_id
+                  LEFT JOIN divisions div ON u.division_id = div.division_id
                   WHERE u.is_active = 1 
                   ORDER BY u.created_at DESC";
         
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
                 'post' => $row['post'],
                 'dep_id' => $row['dep_id'],
                 'department' => $row['department_name'] ?? 'Unknown Department',
-                'div_id' => $row['div_id'],
+                'div_id' => $row['division_id'],
                 'division' => $row['division_name'] ?? 'Unknown Division',
                 'role' => $row['role'],
                 'username' => $row['username'],

@@ -9,9 +9,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     
     try {
         $query = "SELECT ss.sub_id, ss.name, ss.post, ss.dep_id, ss.username, ss.is_active,
-                         d.department_name
+                         d.name as department_name
                   FROM subject_staff ss
-                  LEFT JOIN departments d ON ss.dep_id = d.department_id
+                  LEFT JOIN departments d ON ss.dep_id = d.dep_id
                   WHERE ss.is_active = 1
                   ORDER BY ss.name";
         
@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         $staff = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             // Get assigned divisions for this staff member
-            $div_query = "SELECT div.division_id, div.division_name 
+            $div_query = "SELECT div.division_id, div.name as division_name 
                          FROM subject_staff_divisions ssd
                          JOIN divisions div ON ssd.div_id = div.division_id
                          WHERE ssd.sub_id = ? AND div.status = 'active'";
