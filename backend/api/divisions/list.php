@@ -10,39 +10,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $department_id = isset($_GET['department_id']) ? $_GET['department_id'] : '';
     
     try {
-<<<<<<< HEAD
-        if (!empty($department_id)) {
-            // Get divisions for specific department
-            $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
-                      FROM divisions d 
-                      JOIN departments dept ON d.department_id = dept.department_id 
-                      WHERE d.department_id = ? AND d.status = 'active' 
-                      ORDER BY d.division_name";
-            $stmt = $db->prepare($query);
-            $stmt->execute([$department_id]);
-        } else {
-            // Get all divisions
-            $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
-                      FROM divisions d 
-                      JOIN departments dept ON d.department_id = dept.department_id 
-                      WHERE d.status = 'active' 
-                      ORDER BY dept.department_name, d.division_name";
-=======
         if ($department_id) {
             $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
                      FROM divisions d 
-                     JOIN departments dept ON d.department_id = dept.department_id 
-                     WHERE d.department_id = ? AND d.status = 'active' AND dept.status = 'active'
+                     LEFT JOIN departments dept ON d.department_id = dept.department_id 
+                     WHERE d.department_id = ? AND d.status = 'active'
                      ORDER BY d.division_name";
             $stmt = $db->prepare($query);
             $stmt->execute([$department_id]);
         } else {
             $query = "SELECT d.division_id, d.division_name, d.department_id, dept.department_name 
                      FROM divisions d 
-                     JOIN departments dept ON d.department_id = dept.department_id 
-                     WHERE d.status = 'active' AND dept.status = 'active'
-                     ORDER BY d.division_name";
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
+                     LEFT JOIN departments dept ON d.department_id = dept.department_id 
+                     WHERE d.status = 'active'
+                     ORDER BY dept.department_name, d.division_name";
             $stmt = $db->prepare($query);
             $stmt->execute();
         }
@@ -53,12 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
                 'id' => $row['division_id'],
                 'name' => $row['division_name'],
                 'department_id' => $row['department_id'],
-<<<<<<< HEAD
-                'department_name' => $row['department_name']
-=======
-                'department_name' => $row['department_name'],
+                'department_name' => $row['department_name'] ?? 'Unknown Department',
                 'status' => 'active'
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
             ];
         }
         
@@ -68,8 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             'divisions' => $divisions
         ]);
     } catch (PDOException $exception) {
+        error_log("Divisions list error: " . $exception->getMessage());
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Database error: ' . $exception->getMessage()]);
+        echo json_encode(['success' => false, 'message' => 'Database error occurred']);
     }
 } else {
     http_response_code(405);

@@ -12,22 +12,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $data = json_decode(file_get_contents("php://input"));
     
     if (!empty($data->username) && !empty($data->password) && !empty($data->role)) {
-        $username = $data->username;
+        $username = trim($data->username);
         $password = $data->password;
         $role = $data->role;
         
         try {
             // Check different user tables based on role
             if ($role === 'Admin' || $role === 'Reception_Staff') {
-                $query = "SELECT user_id, name, username, password, role, dep_id, div_id FROM users WHERE username = ? AND role = ? AND is_active = 1";
+                $query = "SELECT user_id, name, username, password, role, dep_id, div_id, is_active FROM users WHERE username = ? AND role = ? AND is_active = 1";
                 $stmt = $db->prepare($query);
                 $stmt->execute([$username, $role]);
             } elseif ($role === 'Subject_Staff') {
-                $query = "SELECT sub_id as user_id, name, username, password, 'Subject_Staff' as role, dep_id FROM subject_staff WHERE username = ? AND is_active = 1";
+                $query = "SELECT sub_id as user_id, name, username, password, 'Subject_Staff' as role, dep_id, is_active FROM subject_staff WHERE username = ? AND is_active = 1";
                 $stmt = $db->prepare($query);
                 $stmt->execute([$username]);
             } elseif ($role === 'Public') {
-                $query = "SELECT public_id as user_id, name, username, password, 'Public' as role FROM public_users WHERE username = ? AND is_active = 1";
+                $query = "SELECT public_id as user_id, name, username, password, 'Public' as role, is_active FROM public_users WHERE username = ? AND is_active = 1";
                 $stmt = $db->prepare($query);
                 $stmt->execute([$username]);
             } else {
@@ -58,24 +58,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             'user_id' => $row['user_id'],
                             'username' => $row['username'],
                             'name' => $row['name'],
-                            'role' => $row['role']
+                            'role' => $row['role'],
+                            'dep_id' => $row['dep_id'] ?? null,
+                            'div_id' => $row['div_id'] ?? null
                         ]
                     ]);
                 } else {
                     http_response_code(401);
-                    echo json_encode(['success' => false, 'message' => 'Invalid credentials']);
+                    echo json_encode(['success' => false, 'message' => 'Invalid password']);
                 }
             } else {
                 http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'User not found']);
+                echo json_encode(['success' => false, 'message' => 'User not found or inactive']);
             }
         } catch (PDOException $exception) {
+            error_log("Login error: " . $exception->getMessage());
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Database error: ' . $exception->getMessage()]);
+            echo json_encode(['success' => false, 'message' => 'Database error occurred']);
         }
     } else {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+        echo json_encode(['success' => false, 'message' => 'Username, password, and role are required']);
     }
 } else {
     http_response_code(405);
