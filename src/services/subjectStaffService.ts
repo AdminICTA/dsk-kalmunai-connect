@@ -1,9 +1,5 @@
 
-<<<<<<< HEAD
 const API_BASE_URL = 'https://dskalmunai.lk/backend/api';
-=======
-const API_BASE_URL = 'http://localhost/backend/api'; // Update this to your actual backend URL
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
 
 export interface SubjectStaff {
   sub_id: string;
@@ -14,11 +10,7 @@ export interface SubjectStaff {
   divisions: string[];
   divisionNames: string[];
   username: string;
-<<<<<<< HEAD
-  password: string;
-=======
   is_active: boolean;
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
 }
 
 export const subjectStaffService = {
@@ -52,15 +44,9 @@ export const subjectStaffService = {
         headers: {
           'Content-Type': 'application/json',
         },
-<<<<<<< HEAD
-        body: JSON.stringify(staffData)
-      });
-
-=======
         body: JSON.stringify(staffData),
       });
       
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
       const data = await response.json();
       
       if (!data.success) {
@@ -72,9 +58,6 @@ export const subjectStaffService = {
       console.error('Error creating subject staff:', error);
       throw error;
     }
-<<<<<<< HEAD
-  }
-=======
   },
 
   async update(staffData: {
@@ -124,5 +107,4 @@ export const subjectStaffService = {
       throw error;
     }
   },
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
 };
