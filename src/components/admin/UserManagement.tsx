@@ -5,17 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Eye, Edit, Trash2, X } from "lucide-react";
-<<<<<<< HEAD
-import { useToast } from "@/components/ui/use-toast";
-import { userService, User } from "@/services/userService";
-import { departmentService, Department } from "@/services/departmentService";
-import { divisionService, Division } from "@/services/divisionService";
-=======
 import { useToast } from "@/hooks/use-toast";
 import { departmentService, Department } from "@/services/departmentService";
 import { divisionService, Division } from "@/services/divisionService";
 import { userService, User } from "@/services/userService";
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
 
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -28,39 +21,18 @@ const UserManagement = () => {
   const [formData, setFormData] = useState({
     name: "", 
     post: "", 
-    department_id: "", 
-    division_id: "", 
+    dep_id: "", 
+    div_id: "", 
     role: "Admin" as "Admin" | "Reception_Staff",
     username: "", 
     password: ""
   });
-<<<<<<< HEAD
-=======
-  const [submitting, setSubmitting] = useState(false);
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
   const { toast } = useToast();
 
   useEffect(() => {
     fetchData();
   }, []);
 
-<<<<<<< HEAD
-  useEffect(() => {
-    if (formData.department_id) {
-      fetchDivisions(formData.department_id);
-    }
-  }, [formData.department_id]);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [userData, departmentData] = await Promise.all([
-        userService.getAll(),
-        departmentService.getAll()
-      ]);
-      setUsers(userData);
-      setDepartments(departmentData);
-=======
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -72,7 +44,6 @@ const UserManagement = () => {
       setUsers(userData);
       setDepartments(departmentData);
       setDivisions(divisionData);
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
     } catch (error) {
       toast({
         title: "Error",
@@ -84,18 +55,7 @@ const UserManagement = () => {
     }
   };
 
-<<<<<<< HEAD
-  const fetchDivisions = async (departmentId: string) => {
-    try {
-      const divisionData = await divisionService.getAll(departmentId);
-      setDivisions(divisionData);
-    } catch (error) {
-      console.error('Error fetching divisions:', error);
-    }
-  };
-=======
   const filteredDivisions = divisions.filter(div => div.department_id.toString() === formData.dep_id);
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,12 +63,6 @@ const UserManagement = () => {
     
     try {
       if (editingUser) {
-<<<<<<< HEAD
-        // Update functionality would go here
-        toast({
-          title: "Info",
-          description: "Update functionality will be implemented soon",
-=======
         const userData = {
           user_id: editingUser.user_id,
           name: formData.name,
@@ -126,7 +80,6 @@ const UserManagement = () => {
         toast({
           title: "Success",
           description: "User updated successfully",
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
         });
       } else {
         const newUser = await userService.create(formData);
@@ -138,11 +91,7 @@ const UserManagement = () => {
       }
       setShowForm(false);
       setEditingUser(null);
-<<<<<<< HEAD
-      setFormData({ name: "", post: "", department_id: "", division_id: "", role: "Admin", username: "", password: "" });
-=======
       setFormData({ name: "", post: "", dep_id: "", div_id: "", role: "Admin", username: "", password: "" });
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
     } catch (error) {
       toast({
         title: "Error",
@@ -155,12 +104,6 @@ const UserManagement = () => {
   };
 
   const handleEdit = (user: User) => {
-<<<<<<< HEAD
-    // Edit functionality placeholder
-    toast({
-      title: "Info",
-      description: "Edit functionality will be implemented soon",
-=======
     setEditingUser(user);
     setFormData({
       name: user.name,
@@ -170,18 +113,10 @@ const UserManagement = () => {
       role: user.role,
       username: user.username,
       password: ""
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
     });
+    setShowForm(true);
   };
 
-<<<<<<< HEAD
-  const handleDelete = (userId: string) => {
-    // Delete functionality placeholder
-    toast({
-      title: "Info",
-      description: "Delete functionality will be implemented soon",
-    });
-=======
   const handleDelete = async (user_id: string) => {
     if (!confirm("Are you sure you want to delete this user?")) {
       return;
@@ -201,7 +136,6 @@ const UserManagement = () => {
         variant: "destructive",
       });
     }
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
   };
 
   if (loading) {
@@ -235,21 +169,13 @@ const UserManagement = () => {
               </div>
             ) : (
               users.map((user) => (
-<<<<<<< HEAD
-                <div key={user.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-=======
                 <div key={user.user_id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
                   <div>
                     <p className="font-semibold text-blue-800">{user.name}</p>
                     <p className="text-sm text-gray-600">
                       {user.post} | {user.role} | {user.department}
                     </p>
-<<<<<<< HEAD
-                    <p className="text-xs text-gray-500">ID: {user.id} | Username: {user.username}</p>
-=======
                     <p className="text-xs text-gray-500">ID: {user.user_id} | Username: {user.username}</p>
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
                   </div>
                   <div className="flex space-x-2">
                     <Button size="sm" variant="outline">
@@ -258,11 +184,7 @@ const UserManagement = () => {
                     <Button size="sm" variant="outline" onClick={() => handleEdit(user)}>
                       <Edit className="w-4 h-4" />
                     </Button>
-<<<<<<< HEAD
-                    <Button size="sm" variant="outline" onClick={() => handleDelete(user.id)}>
-=======
                     <Button size="sm" variant="outline" onClick={() => handleDelete(user.user_id)}>
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -312,8 +234,8 @@ const UserManagement = () => {
                   <Label htmlFor="department">Department</Label>
                   <select
                     id="department"
-                    value={formData.department_id}
-                    onChange={(e) => setFormData({ ...formData, department_id: e.target.value, division_id: "" })}
+                    value={formData.dep_id}
+                    onChange={(e) => setFormData({ ...formData, dep_id: e.target.value, div_id: "" })}
                     className="w-full p-2 border rounded-md"
                     required
                     disabled={submitting}
@@ -328,18 +250,14 @@ const UserManagement = () => {
                   <Label htmlFor="division">Division</Label>
                   <select
                     id="division"
-                    value={formData.division_id}
-                    onChange={(e) => setFormData({ ...formData, division_id: e.target.value })}
+                    value={formData.div_id}
+                    onChange={(e) => setFormData({ ...formData, div_id: e.target.value })}
                     className="w-full p-2 border rounded-md"
                     required
-<<<<<<< HEAD
-                    disabled={!formData.department_id || submitting}
-=======
                     disabled={!formData.dep_id || submitting}
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
                   >
                     <option value="">Select Division</option>
-                    {divisions.map(div => (
+                    {filteredDivisions.map(div => (
                       <option key={div.id} value={div.id}>{div.name}</option>
                     ))}
                   </select>
@@ -377,11 +295,7 @@ const UserManagement = () => {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="Enter password"
-<<<<<<< HEAD
-                    required
-=======
                     required={!editingUser}
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
                     disabled={submitting}
                   />
                 </div>
