@@ -52,7 +52,7 @@ const DivisionManagement = () => {
         const updatedDiv = await divisionService.update(
           editingDiv.id, 
           formData.name, 
-          parseInt(formData.department_id)
+          formData.department_id
         );
         setDivisions(divisions.map(div => 
           div.id === editingDiv.id ? updatedDiv : div
@@ -62,7 +62,7 @@ const DivisionManagement = () => {
           description: "Division updated successfully",
         });
       } else {
-        const newDiv = await divisionService.create(formData.name, parseInt(formData.department_id));
+        const newDiv = await divisionService.create(formData.name, formData.department_id);
         setDivisions([...divisions, newDiv]);
         toast({
           title: "Success",
