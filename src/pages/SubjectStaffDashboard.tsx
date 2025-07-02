@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +13,8 @@ import {
   User, 
   Building2,
   FolderOpen,
-  Files
+  Files,
+  BookOpen
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,7 +40,7 @@ interface Document {
 
 const SubjectStaffDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [documents, setDocuments] = useState<Document[]>({});
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
