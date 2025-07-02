@@ -1,12 +1,14 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, FileText, Shield, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Users, FileText, Shield, ArrowLeft, Eye, EyeOff, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
-type UserRole = 'public' | 'staff' | 'admin';
+type UserRole = 'public' | 'staff' | 'admin' | 'subject-staff';
 
 const Login = () => {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
@@ -15,6 +17,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const roles = [
     {
@@ -27,11 +30,19 @@ const Login = () => {
     },
     {
       id: 'staff' as UserRole,
-      title: 'Staff Member',
-      subtitle: 'Staff portal access',
+      title: 'Reception Staff',
+      subtitle: 'Reception portal access',
       icon: FileText,
       color: 'from-green-500 to-green-600',
-      description: 'Manage documents, process applications, and handle daily operations'
+      description: 'Manage public registration, generate tokens, and handle daily operations'
+    },
+    {
+      id: 'subject-staff' as UserRole,
+      title: 'Subject Staff',
+      subtitle: 'Subject staff portal',
+      icon: BookOpen,
+      color: 'from-orange-500 to-orange-600',
+      description: 'Manage documents, edit files, and handle division-specific tasks'
     },
     {
       id: 'admin' as UserRole,
@@ -43,21 +54,86 @@ const Login = () => {
     }
   ];
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (username && password && selectedRole) {
-      console.log("Login attempt:", { username, password, role: selectedRole });
-      
-      // Simulate login success and redirect based on role
-      if (selectedRole === "admin") {
-        navigate("/admin-dashboard");
-      } else if (selectedRole === "staff") {
-        navigate("/reception-dashboard");
+    if (!username || !password || !selectedRole) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Map frontend role names to backend role names
+      const roleMap = {
+        'public': 'Public',
+        'staff': 'Reception_Staff',
+        'subject-staff': 'Subject_Staff',
+        'admin': 'Admin'
+      };
+
+      const response = await fetch('https://dskalmunai.lk/backend/api/auth/login.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+          role: roleMap[selectedRole]
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Store token and user info
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        toast({
+          title: "Login Successful",
+          description: `Welcome, ${data.user.name}!`,
+        });
+
+        // Redirect based on role
+        switch (selectedRole) {
+          case "admin":
+            navigate("/admin-dashboard");
+            break;
+          case "staff":
+            navigate("/reception-dashboard");
+            break;
+          case "subject-staff":
+            navigate("/subject-staff-dashboard");
+            break;
+          case "public":
+            navigate("/public-dashboard");
+            break;
+          default:
+            console.log(`${selectedRole} dashboard not yet implemented`);
+        }
       } else {
-        // Handle public role when implemented
-        console.log(`${selectedRole} dashboard not yet implemented`);
+        toast({
+          title: "Login Failed",
+          description: data.message || "Invalid credentials",
+          variant: "destructive",
+        });
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Login Error",
+        description: "Failed to connect to server. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,7 +145,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
+      <div className="w-full max-w-5xl">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
@@ -91,7 +167,7 @@ const Login = () => {
               <p className="text-gray-600">Choose your access level to continue</p>
             </CardHeader>
             <CardContent className="p-8">
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {roles.map((role) => {
                   const IconComponent = role.icon;
                   return (
