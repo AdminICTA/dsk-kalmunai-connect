@@ -1,4 +1,3 @@
-
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';

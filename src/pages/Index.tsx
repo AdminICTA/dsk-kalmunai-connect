@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Home, Phone, Info, LogIn, Menu, X, Users, FileText, Shield, Settings } from "lucide-react";
@@ -15,6 +14,10 @@ const Index = () => {
     element?.scrollIntoView({ behavior: "smooth" });
   };
 
+  useEffect(() => {
+    document.title = "Divisional Secretariat - Kalmunai";
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
       {/* Header */}
@@ -26,7 +29,7 @@ const Index = () => {
                 <span className="text-blue-600 font-bold text-xl">DSK</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold">DSK Kalmunai</h1>
+                <h1 className="text-xl font-bold">Divisional Secretariat - Kalmunai</h1>
                 <p className="text-sm text-blue-100">Divisional Secretariat</p>
               </div>
             </div>
@@ -99,7 +102,7 @@ const Index = () => {
           <div className="container mx-auto text-center">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-4xl md:text-6xl font-bold text-blue-800 mb-6">
-                Welcome to DSK Kalmunai
+                Welcome to Divisional Secretariat - Kalmunai
               </h2>
               <p className="text-xl md:text-2xl text-blue-600 mb-8">
                 Divisional Secretariat - Streamlining Public Services
@@ -142,7 +145,7 @@ const Index = () => {
         <section id="about" className="py-20 px-4 bg-white">
           <div className="container mx-auto">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-4xl font-bold text-blue-800 mb-8">About DSK Kalmunai</h2>
+              <h2 className="text-4xl font-bold text-blue-800 mb-8">About Divisional Secretariat - Kalmunai</h2>
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div className="text-left">
                   <p className="text-lg text-gray-700 mb-6">
@@ -288,7 +291,7 @@ const Index = () => {
               <span className="text-blue-600 font-bold text-xl">DSK</span>
             </div>
             <div>
-              <h3 className="text-xl font-bold">DSK Kalmunai</h3>
+              <h3 className="text-xl font-bold">Divisional Secretariat - Kalmunai</h3>
               <p className="text-sm text-blue-200">Divisional Secretariat</p>
             </div>
           </div>

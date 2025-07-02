@@ -1,4 +1,3 @@
-
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
@@ -21,10 +20,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         $staff = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             // Get assigned divisions for this staff member
-            $div_query = "SELECT div.division_id, div.name as division_name 
+            $div_query = "SELECT v.division_id, v.name as division_name 
                          FROM subject_staff_divisions ssd
-                         JOIN divisions div ON ssd.div_id = div.division_id
-                         WHERE ssd.sub_id = ? AND div.status = 'active'";
+                         JOIN divisions v ON ssd.division_id = v.division_id
+                         WHERE ssd.sub_id = ?";
             $div_stmt = $db->prepare($div_query);
             $div_stmt->execute([$row['sub_id']]);
             

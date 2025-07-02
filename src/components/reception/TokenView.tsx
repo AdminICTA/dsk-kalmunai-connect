@@ -1,27 +1,51 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Monitor, CheckCircle, Clock } from "lucide-react";
 
-const TokenView = () => {
-  const [tokens, setTokens] = useState([
-    { department: "Administration", division: "General Administration", currentToken: "DEP001-045", queue: 3, status: "active" },
-    { department: "Finance", division: "Accounting", currentToken: "DEP002-023", queue: 7, status: "active" },
-    { department: "Public Services", division: "Birth Certificates", currentToken: "DEP005-012", queue: 15, status: "active" },
-    { department: "Public Services", division: "Death Certificates", currentToken: "DEP005-008", queue: 5, status: "active" },
-    { department: "Public Services", division: "Marriage Certificates", currentToken: "DEP005-003", queue: 2, status: "waiting" },
-    { department: "Public Services", division: "Land Records", currentToken: "DEP005-019", queue: 12, status: "active" }
-  ]);
+const API_BASE = "/backend/api";
 
-  const handleCompleteToken = (index: number) => {
-    const updatedTokens = [...tokens];
-    const currentNumber = parseInt(updatedTokens[index].currentToken.split('-')[1]);
-    const newTokenNumber = String(currentNumber + 1).padStart(3, '0');
-    updatedTokens[index].currentToken = `${updatedTokens[index].currentToken.split('-')[0]}-${newTokenNumber}`;
-    updatedTokens[index].queue = Math.max(0, updatedTokens[index].queue - 1);
-    setTokens(updatedTokens);
+interface TokenInfo {
+  department: string;
+  division: string;
+  currentToken: string;
+  queue: number;
+  status: string;
+}
+
+const TokenView = () => {
+  const [tokens, setTokens] = useState<TokenInfo[]>([]);
+
+  // Fetch live token data from backend
+  const fetchTokens = async () => {
+    const res = await fetch(`${API_BASE}/registry/list.php?status=Waiting`);
+    const data = await res.json();
+    if (data.success && data.entries) {
+      // Group by department/division, get current token and queue
+      const grouped: { [key: string]: TokenInfo } = {};
+      data.entries.forEach((entry: any) => {
+        const key = `${entry.department_name}-${entry.division_name}`;
+        if (!grouped[key]) {
+          grouped[key] = {
+            department: entry.department_name,
+            division: entry.division_name,
+            currentToken: entry.token_number,
+            queue: 1,
+            status: entry.status.toLowerCase()
+          };
+        } else {
+          grouped[key].queue += 1;
+        }
+      });
+      setTokens(Object.values(grouped));
+    }
   };
+
+  useEffect(() => {
+    fetchTokens();
+    const interval = setInterval(fetchTokens, 10000); // auto-refresh every 10s
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -35,7 +59,7 @@ const TokenView = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {tokens.map((token, index) => (
-              <Card key={index} className={`border-l-4 ${token.status === 'active' ? 'border-l-green-500' : 'border-l-yellow-500'}`}>
+              <Card key={index} className={`border-l-4 ${token.status === 'waiting' ? 'border-l-yellow-500' : 'border-l-green-500'}`}>
                 <CardHeader className="pb-2">
                   <h3 className="font-semibold text-blue-800">{token.department}</h3>
                   <p className="text-sm text-gray-600">{token.division}</p>
@@ -56,14 +80,6 @@ const TokenView = () => {
                         <span className="text-sm capitalize">{token.status}</span>
                       </div>
                     </div>
-                    <Button 
-                      onClick={() => handleCompleteToken(index)}
-                      className="w-full bg-gradient-to-r from-green-600 to-green-700"
-                      size="sm"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Complete & Next
-                    </Button>
                   </div>
                 </CardContent>
               </Card>

@@ -38,7 +38,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- Recreate all tables, views, and insert initial data
 
 -- Departments table
-CREATE TABLE departments (
+CREATE TABLE IF NOT EXISTS departments (
     dep_id VARCHAR(10) PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -46,7 +46,7 @@ CREATE TABLE departments (
 );
 
 -- Divisions table
-CREATE TABLE divisions (
+CREATE TABLE IF NOT EXISTS divisions (
     division_id VARCHAR(10) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     dep_id VARCHAR(10) NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE divisions (
 );
 
 -- Users table (Admin and Reception Staff)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id VARCHAR(10) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     post VARCHAR(100) NOT NULL,
@@ -74,7 +74,7 @@ CREATE TABLE users (
 );
 
 -- Subject Staff table
-CREATE TABLE subject_staff (
+CREATE TABLE IF NOT EXISTS subject_staff (
     sub_id VARCHAR(10) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     post VARCHAR(100) NOT NULL,
@@ -87,8 +87,8 @@ CREATE TABLE subject_staff (
     FOREIGN KEY (dep_id) REFERENCES departments(dep_id) ON DELETE CASCADE
 );
 
--- Subject Staff Divisions Assignment table (Many-to-Many relationship)
-CREATE TABLE subject_staff_divisions (
+-- Subject Staff Divisions Assignment table
+CREATE TABLE IF NOT EXISTS subject_staff_divisions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sub_id VARCHAR(10) NOT NULL,
     division_id VARCHAR(10) NOT NULL,
@@ -99,7 +99,7 @@ CREATE TABLE subject_staff_divisions (
 );
 
 -- Documents table
-CREATE TABLE documents (
+CREATE TABLE IF NOT EXISTS documents (
     doc_id VARCHAR(10) PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     type ENUM('Personal', 'Office', 'Common') NOT NULL,
@@ -118,8 +118,8 @@ CREATE TABLE documents (
     INDEX idx_uploaded_by (uploaded_by)
 );
 
--- Public Users table (for citizens)
-CREATE TABLE public_users (
+-- Public Users table
+CREATE TABLE IF NOT EXISTS public_users (
     public_id VARCHAR(10) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE,

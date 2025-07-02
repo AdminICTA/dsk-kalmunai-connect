@@ -1,4 +1,3 @@
-
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
@@ -14,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             $query = "SELECT d.division_id, d.name as division_name, d.dep_id, dept.name as department_name 
                      FROM divisions d 
                      LEFT JOIN departments dept ON d.dep_id = dept.dep_id 
-                     WHERE d.dep_id = ? AND d.status = 'active'
+                     WHERE d.dep_id = ?
                      ORDER BY d.name";
             $stmt = $db->prepare($query);
             $stmt->execute([$department_id]);
@@ -22,7 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             $query = "SELECT d.division_id, d.name as division_name, d.dep_id, dept.name as department_name 
                      FROM divisions d 
                      LEFT JOIN departments dept ON d.dep_id = dept.dep_id 
-                     WHERE d.status = 'active'
                      ORDER BY dept.name, d.name";
             $stmt = $db->prepare($query);
             $stmt->execute();

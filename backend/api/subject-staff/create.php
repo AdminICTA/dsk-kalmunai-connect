@@ -1,4 +1,3 @@
-
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
@@ -47,15 +46,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         // Generate new subject staff ID
-        $id_query = "SELECT COUNT(*) FROM subject_staff";
+        $id_query = "SELECT MAX(CAST(SUBSTRING(sub_id, 4) AS UNSIGNED)) as max_id FROM subject_staff WHERE sub_id LIKE 'SUB%'";
         $id_stmt = $db->prepare($id_query);
         $id_stmt->execute();
-        $count = $id_stmt->fetchColumn();
-        $sub_id = 'SUB' . str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+        $result = $id_stmt->fetch(PDO::FETCH_ASSOC);
+        $next_num = ($result['max_id'] ?? 0) + 1;
+        $sub_id = 'SUB' . str_pad($next_num, 3, '0', STR_PAD_LEFT);
         
         // Insert new subject staff
-        $insert_query = "INSERT INTO subject_staff (sub_id, name, post, dep_id, username, password, is_active, created_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, 1, NOW())";
+        $insert_query = "INSERT INTO subject_staff (sub_id, name, post, dep_id, username, password, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())";
         $insert_stmt = $db->prepare($insert_query);
         $result = $insert_stmt->execute([$sub_id, $name, $post, $dep_id, $username, $password]);
         
@@ -67,11 +66,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         // Insert division assignments
-        $div_insert_query = "INSERT INTO subject_staff_divisions (sub_id, div_id, assigned_at) VALUES (?, ?, NOW())";
+        $div_insert_query = "INSERT INTO subject_staff_divisions (sub_id, division_id, assigned_at) VALUES (?, ?, NOW())";
         $div_insert_stmt = $db->prepare($div_insert_query);
         
-        foreach ($divisions as $div_id) {
-            $div_result = $div_insert_stmt->execute([$sub_id, $div_id]);
+        foreach ($divisions as $division_id) {
+            $div_result = $div_insert_stmt->execute([$sub_id, $division_id]);
             if (!$div_result) {
                 $db->rollback();
                 http_response_code(500);
@@ -84,13 +83,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $db->commit();
         
         // Get department name for response
-        $dept_query = "SELECT department_name FROM departments WHERE department_id = ?";
+        $dept_query = "SELECT name FROM departments WHERE dep_id = ?";
         $dept_stmt = $db->prepare($dept_query);
         $dept_stmt->execute([$dep_id]);
         $dept_name = $dept_stmt->fetchColumn();
         
         // Get division names for response
-        $div_names_query = "SELECT division_name FROM divisions WHERE division_id IN (" . str_repeat('?,', count($divisions) - 1) . "?)";
+        $div_names_query = "SELECT name FROM divisions WHERE division_id IN (" . str_repeat('?,', count($divisions) - 1) . "?)";
         $div_names_stmt = $db->prepare($div_names_query);
         $div_names_stmt->execute($divisions);
         $division_names = $div_names_stmt->fetchAll(PDO::FETCH_COLUMN);

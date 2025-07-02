@@ -1,4 +1,3 @@
-
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
@@ -22,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     try {
         // Check if department already exists
-        $check_query = "SELECT COUNT(*) FROM departments WHERE department_name = ? AND status = 'active'";
+        $check_query = "SELECT COUNT(*) FROM departments WHERE name = ? AND status = 'active'";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->execute([$name]);
         
@@ -32,25 +31,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             exit;
         }
         
-        // Get the next department ID
-        $id_query = "SELECT MAX(CAST(SUBSTRING(department_id, 4) AS UNSIGNED)) as max_id FROM departments WHERE department_id LIKE 'DEP%'";
+        // Get the next dep_id
+        $id_query = "SELECT MAX(CAST(SUBSTRING(dep_id, 4) AS UNSIGNED)) as max_id FROM departments WHERE dep_id LIKE 'DEP%'";
         $id_stmt = $db->prepare($id_query);
         $id_stmt->execute();
         $result = $id_stmt->fetch(PDO::FETCH_ASSOC);
         $next_num = ($result['max_id'] ?? 0) + 1;
-        $department_id = 'DEP' . str_pad($next_num, 2, '0', STR_PAD_LEFT);
+        $dep_id = 'DEP' . str_pad($next_num, 3, '0', STR_PAD_LEFT);
         
         // Insert new department
-        $query = "INSERT INTO departments (department_id, department_name, status, created_at) VALUES (?, ?, 'active', NOW())";
+        $query = "INSERT INTO departments (dep_id, name, status, created_at) VALUES (?, ?, 'active', NOW())";
         $stmt = $db->prepare($query);
-        $stmt->execute([$department_id, $name]);
+        $stmt->execute([$dep_id, $name]);
         
         http_response_code(201);
         echo json_encode([
             'success' => true,
             'message' => 'Department created successfully',
             'department' => [
-                'id' => $department_id,
+                'dep_id' => $dep_id,
                 'name' => $name,
                 'status' => 'active'
             ]

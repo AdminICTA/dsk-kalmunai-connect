@@ -1,4 +1,3 @@
-
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
@@ -39,8 +38,8 @@ const IdCardGenerator = ({ user }: IdCardGeneratorProps) => {
                   }
                 }
                 @page {
-                  size: A4;
-                  margin: 20mm;
+                  size: 85.6mm 53.98mm;
+                  margin: 0;
                 }
               </style>
             </head>
@@ -59,6 +58,22 @@ const IdCardGenerator = ({ user }: IdCardGeneratorProps) => {
     }
   };
 
+  // Download as image (PNG)
+  const handleDownload = async () => {
+    if (printRef.current) {
+      const node = printRef.current;
+      // Dynamically import html-to-image for client-side rendering
+      const htmlToImage = await import('html-to-image');
+      htmlToImage.toPng(node, { backgroundColor: '#fff', width: 325, height: 204 })
+        .then((dataUrl) => {
+          const link = document.createElement('a');
+          link.download = `ID_Card_${user.public_id}.png`;
+          link.href = dataUrl;
+          link.click();
+        });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-center">
@@ -70,7 +85,7 @@ const IdCardGenerator = ({ user }: IdCardGeneratorProps) => {
           <Printer className="w-4 h-4 mr-2" />
           Print ID Card
         </Button>
-        <Button variant="outline">
+        <Button onClick={handleDownload} variant="outline">
           <Download className="w-4 h-4 mr-2" />
           Download
         </Button>

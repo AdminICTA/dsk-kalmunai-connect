@@ -1,4 +1,3 @@
-
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
@@ -11,22 +10,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $database = new Database();
     $db = $database->getConnection();
     
-    $div_id = isset($_GET['div_id']) ? $_GET['div_id'] : '';
+    $division_id = isset($_GET['division_id']) ? $_GET['division_id'] : '';
     $type = isset($_GET['type']) ? $_GET['type'] : '';
     
     try {
         $query = "SELECT d.doc_id, d.title, d.type, d.file_name, d.file_size, d.uploaded_at, 
-                         div.name as division_name, ss.name as uploaded_by_name
+                         v.name as division_name, d.division_id, ss.name as uploaded_by_name
                   FROM documents d
-                  JOIN divisions div ON d.div_id = div.div_id
+                  JOIN divisions v ON d.division_id = v.division_id
                   LEFT JOIN subject_staff ss ON d.uploaded_by = ss.sub_id
                   WHERE d.is_active = 1";
         
         $params = [];
         
-        if ($div_id) {
-            $query .= " AND d.div_id = ?";
-            $params[] = $div_id;
+        if ($division_id) {
+            $query .= " AND d.division_id = ?";
+            $params[] = $division_id;
         }
         
         if ($type) {
@@ -37,14 +36,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         // Filter based on user role
         if ($user['role'] === 'Subject_Staff') {
             // Only show documents from assigned divisions
-            $div_query = "SELECT div_id FROM subject_staff_divisions WHERE sub_id = ?";
+            $div_query = "SELECT division_id FROM subject_staff_divisions WHERE sub_id = ?";
             $div_stmt = $db->prepare($div_query);
             $div_stmt->execute([$user['user_id']]);
             $assigned_divs = $div_stmt->fetchAll(PDO::FETCH_COLUMN);
             
             if (!empty($assigned_divs)) {
                 $placeholders = str_repeat('?,', count($assigned_divs) - 1) . '?';
-                $query .= " AND d.div_id IN ($placeholders)";
+                $query .= " AND d.division_id IN ($placeholders)";
                 $params = array_merge($params, $assigned_divs);
             }
         }
@@ -62,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
                 'type' => $row['type'],
                 'filename' => $row['file_name'],
                 'file_size' => $row['file_size'],
+                'division_id' => $row['division_id'],
                 'division' => $row['division_name'],
                 'uploaded_by' => $row['uploaded_by_name'],
                 'uploaded_at' => $row['uploaded_at']

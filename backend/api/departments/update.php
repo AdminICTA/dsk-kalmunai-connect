@@ -1,4 +1,3 @@
-
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
@@ -23,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
     
     try {
         // Check if department exists
-        $check_query = "SELECT COUNT(*) FROM departments WHERE department_id = ? AND status = 'active'";
+        $check_query = "SELECT COUNT(*) FROM departments WHERE dep_id = ? AND status = 'active'";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->execute([$id]);
         
@@ -34,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
         }
         
         // Check if new name already exists (excluding current department)
-        $name_check_query = "SELECT COUNT(*) FROM departments WHERE department_name = ? AND department_id != ? AND status = 'active'";
+        $name_check_query = "SELECT COUNT(*) FROM departments WHERE name = ? AND dep_id != ? AND status = 'active'";
         $name_check_stmt = $db->prepare($name_check_query);
         $name_check_stmt->execute([$name, $id]);
         
@@ -45,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
         }
         
         // Update department
-        $query = "UPDATE departments SET department_name = ?, updated_at = NOW() WHERE department_id = ?";
+        $query = "UPDATE departments SET name = ?, updated_at = NOW() WHERE dep_id = ?";
         $stmt = $db->prepare($query);
         $stmt->execute([$name, $id]);
         
@@ -54,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
             'success' => true,
             'message' => 'Department updated successfully',
             'department' => [
-                'id' => $id,
+                'dep_id' => $id,
                 'name' => $name,
                 'status' => 'active'
             ]

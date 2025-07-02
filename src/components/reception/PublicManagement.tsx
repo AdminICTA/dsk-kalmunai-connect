@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,19 +38,37 @@ const PublicManagement = ({ onCreateSuccess }: PublicManagementProps) => {
     e.preventDefault();
     setSubmitting(true);
     
+    // Map frontend fields to backend expected fields
+    const payload = {
+      name: formData.name,
+      nic_number: formData.nic,           // map 'nic' to 'nic_number'
+      phone: formData.mobile,             // map 'mobile' to 'phone'
+      address: formData.address,
+      date_of_birth: formData.dateOfBirth // map 'dateOfBirth' to 'date_of_birth'
+    };
+
     try {
       const response = await fetch('https://dskalmunai.lk/backend/api/public/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)      // send mapped payload
       });
 
       const data = await response.json();
       
       if (data.success) {
-        setCreatedUser(data.user);
+        // Map backend fields to frontend fields for the ID card
+        const user = data.user;
+        setCreatedUser({
+          public_id: user.public_id,
+          name: user.name,
+          nic: user.nic_number, // map nic_number to nic
+          address: user.address,
+          mobile: user.phone, // map phone to mobile
+          dateOfBirth: user.date_of_birth // map date_of_birth to dateOfBirth
+        });
         setShowIdCard(true);
         toast({
           title: "Success",

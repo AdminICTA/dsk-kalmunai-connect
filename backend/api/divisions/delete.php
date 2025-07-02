@@ -1,4 +1,3 @@
-
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
@@ -7,10 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
     $database = new Database();
     $db = $database->getConnection();
     
-<<<<<<< HEAD
-=======
     // Get division ID from URL parameter
->>>>>>> 7827c2f1d42e7c2b03be2e9489d1546c3cd5ffb3
     $id = isset($_GET['id']) ? $_GET['id'] : '';
     
     if (empty($id)) {

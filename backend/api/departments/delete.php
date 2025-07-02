@@ -1,4 +1,3 @@
-
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
@@ -21,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
         $db->beginTransaction();
         
         // Check if department exists and get its current status
-        $check_query = "SELECT department_id, department_name, status FROM departments WHERE department_id = ?";
+        $check_query = "SELECT dep_id, name, status FROM departments WHERE dep_id = ?";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->execute([$id]);
         $department = $check_stmt->fetch(PDO::FETCH_ASSOC);
@@ -34,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
         }
         
         // Check if department has active divisions
-        $div_check_query = "SELECT COUNT(*) as count FROM divisions WHERE department_id = ? AND status = 'active'";
+        $div_check_query = "SELECT COUNT(*) as count FROM divisions WHERE dep_id = ? AND status = 'active'";
         $div_check_stmt = $db->prepare($div_check_query);
         $div_check_stmt->execute([$id]);
         $div_count = $div_check_stmt->fetch(PDO::FETCH_ASSOC);
@@ -47,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
         }
         
         // Soft delete - set status to inactive
-        $delete_query = "UPDATE departments SET status = 'inactive', updated_at = NOW() WHERE department_id = ?";
+        $delete_query = "UPDATE departments SET status = 'inactive', updated_at = NOW() WHERE dep_id = ?";
         $delete_stmt = $db->prepare($delete_query);
         $result = $delete_stmt->execute([$id]);
         

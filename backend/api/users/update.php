@@ -1,4 +1,3 @@
-
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
@@ -14,8 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
     // Validate input
     if (!isset($data['user_id']) || !isset($data['name']) || empty(trim($data['name'])) || 
         !isset($data['post']) || empty(trim($data['post'])) ||
-        !isset($data['dep_id']) || !isset($data['div_id']) ||
-        !isset($data['role']) || !isset($data['username'])) {
+        !isset($data['dep_id']) || empty($data['dep_id']) ||
+        !isset($data['division_id']) || empty($data['division_id']) ||
+        !isset($data['role']) || empty($data['role']) ||
+        !isset($data['username']) || empty(trim($data['username']))) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'All fields are required']);
         exit;
@@ -25,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
     $name = trim($data['name']);
     $post = trim($data['post']);
     $dep_id = $data['dep_id'];
-    $div_id = $data['div_id'];
+    $division_id = $data['division_id'];
     $role = $data['role'];
     $username = trim($data['username']);
     
@@ -55,24 +56,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
         // Update user (with or without password)
         if (isset($data['password']) && !empty($data['password'])) {
             $password = password_hash($data['password'], PASSWORD_DEFAULT);
-            $query = "UPDATE users SET name = ?, post = ?, dep_id = ?, div_id = ?, role = ?, username = ?, password = ?, updated_at = NOW() WHERE user_id = ?";
+            $query = "UPDATE users SET name = ?, post = ?, dep_id = ?, division_id = ?, role = ?, username = ?, password = ?, updated_at = NOW() WHERE user_id = ?";
             $stmt = $db->prepare($query);
-            $stmt->execute([$name, $post, $dep_id, $div_id, $role, $username, $password, $user_id]);
+            $stmt->execute([$name, $post, $dep_id, $division_id, $role, $username, $password, $user_id]);
         } else {
-            $query = "UPDATE users SET name = ?, post = ?, dep_id = ?, div_id = ?, role = ?, username = ?, updated_at = NOW() WHERE user_id = ?";
+            $query = "UPDATE users SET name = ?, post = ?, dep_id = ?, division_id = ?, role = ?, username = ?, updated_at = NOW() WHERE user_id = ?";
             $stmt = $db->prepare($query);
-            $stmt->execute([$name, $post, $dep_id, $div_id, $role, $username, $user_id]);
+            $stmt->execute([$name, $post, $dep_id, $division_id, $role, $username, $user_id]);
         }
         
         // Get department and division names for response
-        $dept_query = "SELECT department_name FROM departments WHERE department_id = ?";
+        $dept_query = "SELECT name FROM departments WHERE dep_id = ?";
         $dept_stmt = $db->prepare($dept_query);
         $dept_stmt->execute([$dep_id]);
         $dept_name = $dept_stmt->fetchColumn();
         
-        $div_query = "SELECT division_name FROM divisions WHERE division_id = ?";
+        $div_query = "SELECT name FROM divisions WHERE division_id = ?";
         $div_stmt = $db->prepare($div_query);
-        $div_stmt->execute([$div_id]);
+        $div_stmt->execute([$division_id]);
         $div_name = $div_stmt->fetchColumn();
         
         http_response_code(200);
@@ -85,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
                 'post' => $post,
                 'dep_id' => $dep_id,
                 'department' => $dept_name,
-                'div_id' => $div_id,
+                'division_id' => $division_id,
                 'division' => $div_name,
                 'role' => $role,
                 'username' => $username,

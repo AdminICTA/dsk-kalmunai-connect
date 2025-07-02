@@ -1,4 +1,3 @@
-
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
@@ -9,10 +8,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     
     try {
         $query = "SELECT u.user_id, u.name, u.post, u.dep_id, u.division_id, u.role, u.username, u.is_active,
-                         d.name as department_name, div.name as division_name
+                         d.name as department_name, v.name as division_name
                   FROM users u
                   LEFT JOIN departments d ON u.dep_id = d.dep_id
-                  LEFT JOIN divisions div ON u.division_id = div.division_id
+                  LEFT JOIN divisions v ON u.division_id = v.division_id
                   WHERE u.is_active = 1 
                   ORDER BY u.created_at DESC";
         
